@@ -19,9 +19,14 @@ customConfig = {
     geOrchestraBaseUrl: 'https://geobretagne.fr/',
 
     /**
+     * projection
+     */
+    projcode: 'EPSG:3857',
+
+    /**
      * map bounds
      */
-    initialExtent: [-583000, 5980000, -85500, 6270000],
+    initialExtent: [-12880000,-1080000,5890000,7540000],
     maxExtent: [-20037508.34, -20037508.34, 20037508.34, 20037508.34],
     restrictedExtent: [-20037508.34, -20037508.34, 20037508.34, 20037508.34],
 
@@ -36,9 +41,7 @@ customConfig = {
      */
     openLSGeocodeUrl: "https://geobretagne.fr/openls?",
 
-
-
-    /**
+/**
      * background layers (EPSG:3857)
      */
     layersBackground: [
