@@ -1,4 +1,5 @@
-html, body {
+html,
+body {
     margin: 0px;
     padding: 0px;
     width: 100%;
@@ -7,38 +8,100 @@ html, body {
 
 
 /* Overrides jquery ui theme styles */
-.ui-page-theme-b .ui-btn, html .ui-bar-b .ui-btn, html .ui-body-b .ui-btn, html body .ui-group-theme-b .ui-btn, html head+body .ui-btn.ui-btn-b, .ui-page-theme-b .ui-btn:visited, html .ui-bar-b .ui-btn:visited, html .ui-body-b .ui-btn:visited, html body .ui-group-theme-b .ui-btn:visited, html head+body .ui-btn.ui-btn-b:visited {
+
+.ui-page-theme-b .ui-btn,
+html .ui-bar-b .ui-btn,
+html .ui-body-b .ui-btn,
+html body .ui-group-theme-b .ui-btn,
+html head + body .ui-btn.ui-btn-b,
+.ui-page-theme-b .ui-btn:visited,
+html .ui-bar-b .ui-btn:visited,
+html .ui-body-b .ui-btn:visited,
+html body .ui-group-theme-b .ui-btn:visited,
+html head + body .ui-btn.ui-btn-b:visited {
     background-color: #626161;
     border-color: #aaa;
     color: #fff;
     text-shadow: 0 1px 0 #111;
 }
 
-.ui-page-theme-b .ui-btn:hover, html .ui-bar-b .ui-btn:hover, html .ui-body-b .ui-btn:hover, html body .ui-group-theme-b .ui-btn:hover, html head+body .ui-btn.ui-btn-b:hover, .ui-page-theme-b .ui-btn:visited:hover, html .ui-bar-b .ui-btn:visited:hover, html .ui-body-b .ui-btn:visited:hover, html body .ui-group-theme-b .ui-btn:visited:hover, html head+body .ui-btn.ui-btn-b:visited:hover {
+.ui-page-theme-b .ui-btn:hover,
+html .ui-bar-b .ui-btn:hover,
+html .ui-body-b .ui-btn:hover,
+html body .ui-group-theme-b .ui-btn:hover,
+html head + body .ui-btn.ui-btn-b:hover,
+.ui-page-theme-b .ui-btn:visited:hover,
+html .ui-bar-b .ui-btn:visited:hover,
+html .ui-body-b .ui-btn:visited:hover,
+html body .ui-group-theme-b .ui-btn:visited:hover,
+html head + body .ui-btn.ui-btn-b:visited:hover {
     background-color: #3f3f3f;
     border-color: #888;
 }
 
-.ui-page-theme-b .ui-btn:focus, html .ui-bar-b .ui-btn:focus, html .ui-body-b .ui-btn:focus, html body .ui-group-theme-b .ui-btn:focus, html head+body .ui-btn.ui-btn-b:focus, .ui-page-theme-b .ui-focus, html .ui-bar-b .ui-focus, html .ui-body-b .ui-focus, html body .ui-group-theme-b .ui-focus, html head+body .ui-btn-b.ui-focus, html head+body .ui-body-b.ui-focus {
+.ui-page-theme-b .ui-btn:focus,
+html .ui-bar-b .ui-btn:focus,
+html .ui-body-b .ui-btn:focus,
+html body .ui-group-theme-b .ui-btn:focus,
+html head + body .ui-btn.ui-btn-b:focus,
+.ui-page-theme-b .ui-focus,
+html .ui-bar-b .ui-focus,
+html .ui-body-b .ui-focus,
+html body .ui-group-theme-b .ui-focus,
+html head + body .ui-btn-b.ui-focus,
+html head + body .ui-body-b.ui-focus {
     -webkit-box-shadow: 0 0 5px #fff;
     -moz-box-shadow: 0 0 5px #fff;
     box-shadow: 0 0 5px #fff;
 }
 
-.ui-page-theme-b .ui-btn.ui-btn-active, html .ui-bar-b .ui-btn.ui-btn-active, html .ui-body-b .ui-btn.ui-btn-active, html body .ui-group-theme-b .ui-btn.ui-btn-active, html head+body .ui-btn.ui-btn-b.ui-btn-active, .ui-page-theme-b .ui-checkbox-on:after, html .ui-bar-b .ui-checkbox-on:after, html .ui-body-b .ui-checkbox-on:after, html body .ui-group-theme-b .ui-checkbox-on:after, .ui-btn.ui-checkbox-on.ui-btn-b:after, .ui-page-theme-b .ui-flipswitch-active, html .ui-bar-b .ui-flipswitch-active, html .ui-body-b .ui-flipswitch-active, html body .ui-group-theme-b .ui-flipswitch-active, html body .ui-flipswitch.ui-bar-b.ui-flipswitch-active, .ui-page-theme-b .ui-slider-track .ui-btn-active, html .ui-bar-b .ui-slider-track .ui-btn-active, html .ui-body-b .ui-slider-track .ui-btn-active, html body .ui-group-theme-b .ui-slider-track .ui-btn-active, html body div.ui-slider-track.ui-body-b .ui-btn-active {
+.ui-page-theme-b .ui-btn.ui-btn-active,
+html .ui-bar-b .ui-btn.ui-btn-active,
+html .ui-body-b .ui-btn.ui-btn-active,
+html body .ui-group-theme-b .ui-btn.ui-btn-active,
+html head + body .ui-btn.ui-btn-b.ui-btn-active,
+.ui-page-theme-b .ui-checkbox-on:after,
+html .ui-bar-b .ui-checkbox-on:after,
+html .ui-body-b .ui-checkbox-on:after,
+html body .ui-group-theme-b .ui-checkbox-on:after,
+.ui-btn.ui-checkbox-on.ui-btn-b:after,
+.ui-page-theme-b .ui-flipswitch-active,
+html .ui-bar-b .ui-flipswitch-active,
+html .ui-body-b .ui-flipswitch-active,
+html body .ui-group-theme-b .ui-flipswitch-active,
+html body .ui-flipswitch.ui-bar-b.ui-flipswitch-active,
+.ui-page-theme-b .ui-slider-track .ui-btn-active,
+html .ui-bar-b .ui-slider-track .ui-btn-active,
+html .ui-body-b .ui-slider-track .ui-btn-active,
+html body .ui-group-theme-b .ui-slider-track .ui-btn-active,
+html body div.ui-slider-track.ui-body-b .ui-btn-active {
     background-color: #aaa;
     border-color: #888;
     color: #fff;
     text-shadow: 0 1px 0 #555;
 }
 
-.ui-page-theme-a .ui-btn:hover, html .ui-bar-a .ui-btn:hover, html .ui-body-a .ui-btn:hover, html body .ui-group-theme-a .ui-btn:hover, html head + body .ui-btn.ui-btn-a:hover {
+.ui-page-theme-a .ui-btn:hover,
+html .ui-bar-a .ui-btn:hover,
+html .ui-body-a .ui-btn:hover,
+html body .ui-group-theme-a .ui-btn:hover,
+html head + body .ui-btn.ui-btn-a:hover {
     -webkit-box-shadow: 0 0 7px #999;
     -moz-box-shadow: 0 0 7px #999;
     box-shadow: 0 0 7px #999;
 }
 
-.ui-page-theme-a .ui-btn:focus, html .ui-bar-a .ui-btn:focus, html .ui-body-a .ui-btn:focus, html body .ui-group-theme-a .ui-btn:focus, html head + body .ui-btn.ui-btn-a:focus, .ui-page-theme-a .ui-focus, html .ui-bar-a .ui-focus, html .ui-body-a .ui-focus, html body .ui-group-theme-a .ui-focus, html head + body .ui-btn-a.ui-focus, html head + body .ui-body-a.ui-focus {
+.ui-page-theme-a .ui-btn:focus,
+html .ui-bar-a .ui-btn:focus,
+html .ui-body-a .ui-btn:focus,
+html body .ui-group-theme-a .ui-btn:focus,
+html head + body .ui-btn.ui-btn-a:focus,
+.ui-page-theme-a .ui-focus,
+html .ui-bar-a .ui-focus,
+html .ui-body-a .ui-focus,
+html body .ui-group-theme-a .ui-focus,
+html head + body .ui-btn-a.ui-focus,
+html head + body .ui-body-a.ui-focus {
     -webkit-box-shadow: 0 0 7px #999;
     -moz-box-shadow: 0 0 7px #999;
     box-shadow: 0 0 7px #999;
@@ -46,6 +109,7 @@ html, body {
 
 
 /* Overrides openlayers styles */
+
 .ol-control button {
     color: #fff;
     background-color: #626161;
@@ -67,11 +131,12 @@ label {
 }
 
 p.center {
-	text-align: center;
+    text-align: center;
 }
 
 
 /* page structure */
+
 .sv-framemap {
     padding: 0px;
     background: transparent url('images/bgpaper.jpg');
@@ -93,7 +158,7 @@ p.center {
     left: 0px;
     width: 100%;
     z-index: 8000;
-    background-color: rgba(255,255,255,0.7);
+    background-color: rgba(255, 255, 255, 0.7);
 }
 
 .sv-date {
@@ -108,7 +173,7 @@ p.center {
     color: #333;
     border-color: #333;
     border-radius: 4px;
-    background-color: rgba(255,255,255,0.7);
+    background-color: rgba(255, 255, 255, 0.7);
 }
 
 .sv-map-panels {
@@ -119,7 +184,12 @@ p.center {
     z-index: 8010;
 }
 
-#panelInfo-popup,#panelLocate-popup,#panelShare-popup, #panelQuery-popup, #panelFeedback-popup {
+#panelInfo-popup,
+#panelLocate-popup,
+#panelShare-popup,
+#panelQuery-popup,
+#panelWPS-popup,
+#panelFeedback-popup {
     top: 54px !important;
     right: 4px !important;
     left: auto !important;
@@ -169,7 +239,7 @@ p.center {
 /* map components */
 
 .sv-header {
-	display: none;
+    display: none;
 }
 
 .sv-map {
@@ -178,7 +248,7 @@ p.center {
     cursor: hand;
 }
 
-.sv-map-controls .ui-btn{
+.sv-map-controls .ui-btn {
     width: 44px;
     height: 44px;
     margin: 0 0 4px 0;
@@ -197,8 +267,7 @@ p.center {
     color: #666;
 }
 
-.sv-feedbackTip .sv-comment {
-}
+.sv-feedbackTip .sv-comment {}
 
 
 @media screen and (max-width: 600px),
@@ -212,18 +281,21 @@ screen and (max-height: 400px) {
 
 
 .sv-map-controls .ui-btn-active {
-	background-color: #fff !important;
+    background-color: #fff !important;
 }
 
 .ui-icon-home-c {
     background-image: url('images/home.png') !important;
 }
+
 .ui-icon-plus-c {
     background-image: url('images/zoom-plus.png') !important;
 }
+
 .ui-icon-minus-c {
     background-image: url('images/zoom-minus.png') !important;
 }
+
 .ui-icon-layer-c {
     background-image: url('images/map.png') !important;
 }
@@ -240,7 +312,7 @@ screen and (max-height: 400px) {
 }
 
 .sv-map .ol-scale-line {
-    background-color: rgba(255,255,255,0.7);
+    background-color: rgba(255, 255, 255, 0.7);
 }
 
 .sv-map .ol-scale-line-inner {
@@ -250,7 +322,7 @@ screen and (max-height: 400px) {
 
 .sv-map .ol-attribution {
     color: #333333;
-    background-color: rgba(255,255,255,0.7);
+    background-color: rgba(255, 255, 255, 0.7);
     border-top-left-radius: 4px;
 }
 
@@ -262,13 +334,17 @@ screen and (max-height: 400px) {
 
 /* panels */
 
-#panelInfo-screen, #panelLocate-screen, #panelShare-screen, #panelQuery-screen, #panelFeedback-screen {
+#panelInfo-screen,
+#panelLocate-screen,
+#panelShare-screen,
+#panelQuery-screen,
+#panelFeedback-screen {
     display: none;
 }
 
-.controlgroup-textinput{
-    padding-top:.22em;
-    padding-bottom:.1em;
+.controlgroup-textinput {
+    padding-top: .22em;
+    padding-bottom: .1em;
 }
 
 /* legend layout */
@@ -280,13 +356,17 @@ screen and (max-height: 400px) {
 .sv-legend a {
     text-decoration: none;
 }
-.sv-legend h4,p {
+
+.sv-legend h4,
+p {
     padding: 0 0 2px 0 !important;
     margin: 0;
 }
+
 .sv-legend hr {
     clear: both;
 }
+
 .sv-md {
     border: 1px solid #cccccc;
     border-radius: 4px;
@@ -294,11 +374,13 @@ screen and (max-height: 400px) {
     margin-bottom: 6px;
     background-color: #ffffff;
 }
+
 .sv-md-title {
     font-size: x-small;
 }
-.sv-md-abstract {
-}
+
+.sv-md-abstract {}
+
 .sv-md-attrib {
     display: block;
     float: right;
@@ -306,14 +388,17 @@ screen and (max-height: 400px) {
     max-width: 80px;
     font-size: x-small;
 }
+
 .sv-md-logo {
     max-height: 64px;
     max-width: 64px;
 }
+
 .sv-md-legend {
     padding: 4px;
     max-width: 320px;
 }
+
 .sv-md-meta {
     text-decoration: none;
 }
@@ -344,11 +429,36 @@ screen and (max-height: 400px) {
 .sv-feature a {
     font-size: 0.7em;
 }
+
 .sv-location a {
     font-size: 0.7em;
 }
 
 /* validation */
+
 form label.error {
-	color: #f00;
+    color: #f00;
+}
+
+table {
+    border-collapse: collapse;
+    width: 430px;
+    margin-left:10px; 
+    margin-right:10px;
+    table-layout: fixed;
+}
+
+td {
+    text-align: center;
+    border: 1px solid black;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.graphFlow {
+    width: 430px;
+    margin-left:10px; 
+    margin-right:10px;
+    height: 200px;
+    border: 1px solid black;
 }

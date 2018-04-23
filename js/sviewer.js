@@ -8,16 +8,18 @@ proj4.defs([
     ["EPSG:2154", "+title=RGF-93/Lambert 93, +proj=lcc +lat_1=49 +lat_2=44 +lat_0=46.5 +lon_0=3 +x_0=700000 +y_0=6600000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"]
 ]);
 
-// map projection and grids
+// map projection and grids (retrodata)
 var projcode = 'EPSG:3857';
 var projection = ol.proj.get(projcode);
 var projectionExtent = projection.getExtent();
 var size = ol.extent.getWidth(projectionExtent) / 256;
 var resolutions = new Array(20);
 var matrixIds = new Array(20);
+var matrixIdsIGN = new Array(20);
 for (var z = 0; z < 20; ++z) {
     resolutions[z] = size / Math.pow(2, z);
-    matrixIds[z] =projcode + ':' + z;
+    matrixIds[z] = projcode + ':' + z;
+    matrixIdsIGN[z] = z; // matrixIds array for IGN WMTS added by HS
 }
 
 var config = {};
@@ -43,8 +45,8 @@ var hardConfig = {
         'Facebook': 'http://www.facebook.com/sharer/sharer.php?u='
     }
 };
-var debug;
 
+var debug;
 
 var SViewer = function () {
     var map;
@@ -294,8 +296,6 @@ var SViewer = function () {
 
         this.construct(options);
     }
-
-
 
     // ----- methods ------------------------------------------------------------------------------------
 
@@ -560,7 +560,7 @@ var SViewer = function () {
      */
     function setPermalink() {
         // permalink, social links & QR code update only if frame is visible
-        if ($('#panelShare').css('visibility') === 'visible') { 
+        if ($('#panelShare').css('visibility') === 'visible') {
             var permalinkHash, permalinkQuery;
             var c = view.getCenter();
             var linkParams = {};
@@ -1158,9 +1158,190 @@ ol.extent.getTopRight(extent).reverse().join(" "),
         $("#searchResults").listview().listview('refresh');
     }
 
+    /**
+     * method : simfen/WPS
+     * use sviewer for wps and dashboard
+     */   
+    
+    function positionToL93(coordinate) {
+        // Recupere la coordonnee du point clique en epsg:3857
+        //var coordinate = e.coordinate;
+        // Convertie la coordonnee en Lambert 93 (projection du wps)
+        var coordinateL93 = ol.proj.transform(coordinate, 'EPSG:3857', 'EPSG:2154');
+        // Initialise un arrondi a 2 decimale et l'applique sur la coordonnee en Lambert 93
+        var coordRounded = ol.coordinate.createStringXY(2);
+        var out = coordRounded(coordinateL93);
+        return out
+    }
 
+    // Cree la variable xmlrequest
+    function getXDomainRequest() {
+        var xhr = null;
+        if (window.XDomainRequest) {
+            xhr = new XDomainRequest();
+        } else if (window.XMLHttpRequest) {
+            xhr = new XMLHttpRequest();
+        } else {
+            alert("Erreur initialisation XMLHttpRequests");
+        }
+        return xhr;
+    }
 
+    function resultLink(xmlDoc, strResult) {
+        // Recupere le tag et l'attribut contenant la page xml de resultat et
+        // cree un lien pour y acceder
+        var tagExecute = xmlDoc.getElementsByTagName('wps:ExecuteResponse')[0];
+        var attrStatus = tagExecute.getAttribute("statusLocation");
+        // Cree un lien hypertext avec target blank
+        var xmlResult = document.createElement("a");
+        xmlResult.setAttribute("href", attrStatus);
+        xmlResult.setAttribute("target", "_blank");
+        xmlResult.appendChild(document.createTextNode(strResult));
 
+        var returnedObject = {};
+        returnedObject["url"] = attrStatus;
+        returnedObject["link"] = xmlResult;
+        return returnedObject;
+    }
+
+    function getStatus(xmlDoc, statusCell) {
+        // Recupere le status de la requete wps et mets a jour
+        // celle ci dans le tableau de bord si necessaire
+        var tagStatus = xmlDoc.getElementsByTagName('wps:Status');
+        var status = tagStatus[0].childNodes[1];
+        if (status.nodeName === 'wps:ProcessAccepted') {
+            statusCell.innerHTML = 'Process Accepted';
+            return 'Process Accepted';
+        } else if (status.nodeName === 'wps:ProcessSucceeded') {
+            statusCell.innerHTML = 'Process Succeeded';
+            return 'Process Succeeded';
+        } else if (status.nodeName === 'wps:ProcessFailed') {
+            statusCell.innerHTML = 'Process Failed';
+            return 'Process Failed';
+        } else {
+            statusCell.innerHTML = 'Error';
+            return 'Error';
+        }
+    }
+    
+    function updateStatus(url, statusCell, statusUpdate) {
+        // Met a jour le statut en repetant cette requete
+        // autant de fois que necessaire pour sortir de l'etat
+        // process succeeded
+        var xhrStatus = getXDomainRequest();
+        xhrStatus.open("GET", ajaxURL(url), true);
+        xhrStatus.addEventListener('readystatechange', function() {
+            if (xhrStatus.readyState === XMLHttpRequest.DONE && xhrStatus.status === 200) {
+                var xmlStatus = xhrStatus.responseXML;
+                var etatStatus = getStatus(xmlStatus, statusCell);
+                if (etatStatus !== 'Process Accepted') {
+                    clearInterval(statusUpdate);
+                    if (etatStatus === 'Process Succeeded') {
+                        getPlotDatas(xmlStatus);
+                    }
+                }
+            }
+        });
+        xhrStatus.send();
+    }
+
+    function getPlotDatas(xmlResponse) {
+        var tagDatas = xmlResponse.getElementsByTagName('wps:ComplexData');
+        var datasJson = tagDatas[0].textContent;
+        var datas = JSON.parse(datasJson);
+        var xDatas = [];
+        var yDatas = [];
+        for (var i = 0; i < datas.length; i++) {
+            xDatas = xDatas.concat(datas[i]["date"]);
+            yDatas = yDatas.concat(datas[i]["runoff"]);
+        }
+
+        var trace1 = {
+            x: xDatas,
+            y: yDatas,
+            type: 'scatter'
+        };
+
+        var plotDatas = [trace1];
+        Plotly.newPlot('graphFlowSimulated', plotDatas);
+    }
+
+    function wpsExe() {
+        $('#wpsForm').validate({
+            debug: true,
+            rules: {
+                dateStart: {
+                    required: true,
+                    minlength: 10,
+                    maxlength: 10
+                },
+                dateEnd: {
+                    required: true,
+                    minlength: 10,
+                    maxlength: 10
+                },
+                nameProcess: {
+                    required: true,
+                    maxlength: 75
+                }
+            },
+            submitHandler: function (form) {
+                coord = positionToL93(marker.getPosition());
+                var xhr = getXDomainRequest();
+                rqtWPS = config.wps.url_wps+
+                      "service="+config.wps.service+
+                      "&version="+config.wps.version+
+                      "&request="+config.wps.request+
+                      "&identifier="+config.wps.identifier+
+                      "&datainputs="+
+                        config.wps.datainputs.split("/")[0]+coord.split(',')[0]+
+                        config.wps.datainputs.split("/")[1]+coord.split(',')[1]+
+                        config.wps.datainputs.split("/")[2]+$("#dateStart").val()+
+                        config.wps.datainputs.split("/")[3]+$("#dateEnd").val()+
+                      "&storeExecuteResponse="+config.wps.storeExecuteResponse+
+                      "&lineage="+config.wps.lineage+
+                      "&status="+config.wps.status;
+                
+                xhr.open("GET", ajaxURL(rqtWPS.replace(/\s+/g, '')), true);
+                xhr.addEventListener('readystatechange', function() {
+                    if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+                        // Recupere le xml de la requete
+                        var xmlDoc = xhr.responseXML;
+                        // Se connecte au tableau de bord
+                        var tableRef = document.getElementById('panelWPS').getElementsByTagName('tbody')[0];
+                        // Insert a row in the table at the last row
+                        var newRow = tableRef.insertRow(tableRef.rows.length);
+                        // Insert a cell in the row at index 0
+                        var linkCell = newRow.insertCell(0);
+                        var statusCell = newRow.insertCell(1);
+                        // Ajoute l'url du resultat dans cette cellule
+                        var links = resultLink(xmlDoc, $("#nameProcess").val());
+                        // defini l'id unique de la requete selon l'url du resultat
+                        linkCell.id = links.link;
+                        document.getElementById(links.link).appendChild(links.link);
+                        // Recupere le status du process
+                        var etatStatus = getStatus(xmlDoc, statusCell);
+
+                        // Controle l'evolution du process et l'arrete au besoin
+                        var statusUpdate = setInterval(function() {
+                            updateStatus(links.url, statusCell, statusUpdate);
+                        }, config.wps.refreshTime);
+                    }
+                });
+                xhr.send();
+            },
+            messages: {
+                dateStart: {
+                    required: tr("Date mandatory")
+                },
+                dateEnd: {
+                    email: tr("Date mandatory")
+                },
+                nameProcess: tr("Name mandatory")
+            }
+        });
+    }
+    
 
     /**
      * method: feedbackForm
@@ -1724,6 +1905,8 @@ ol.extent.getTopRight(extent).reverse().join(" "),
         map.on('singleclick', function (e) {
             queryMap(e.coordinate);
         });
+
+
         map.on('moveend', setPermalink);
         $('#marker').click(clearQuery);
 
@@ -1745,7 +1928,12 @@ ol.extent.getTopRight(extent).reverse().join(" "),
         $('#georchestraForm').submit(function (e) {
             sendMapTo('georchestra_viewer');
         });
-
+        
+        // wps form
+        if (config.hasOwnProperty('wps')) {
+            wpsExe();
+        }
+        
         // feedback form handled by validation plugin,
         // activated if config.retrodata.url is valid
         if (config.hasOwnProperty('retrodata')) {

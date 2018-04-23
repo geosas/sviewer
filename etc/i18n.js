@@ -20,6 +20,8 @@ $.extend(hardConfig, {
             'no item found': 'aucun objet n\'a été trouvé',
             'query failed': 'l\'interrogation a échoué',
             
+            'WPS': 'WPS',
+            
             'Feedback': 'Vos retours',
             'Your feedback about this map': 'Votre commentaire à propos de cette carte',
             'type your comment here...': 'tapez votre commentaire ici ...',
