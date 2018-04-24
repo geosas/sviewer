@@ -43,18 +43,21 @@ customConfig = {
     layersBackground: [
         new ol.layer.Group({
             layers: [
-        // carte simple
-        new ol.layer.Tile({
+                    // carte simple
+                    new ol.layer.Tile({
                     source: new ol.source.XYZ({
-                        attributions: [new ol.Attribution({
-                            html: 'carte <a href="https://geobretagne.fr/geonetwork/apps/georchestra/?uuid=3303a14b-44af-4950-b067-f43ddc0f483f">GéoBretagne</a>,' +
-                                'données contributeurs <a href="http://www.openstreetmap.org/">OpenStreetMap</a> <a href="http://www.openstreetmap.org/copyright">ODbL</a>'
-                        })],
+                        attributions: [
+                            new ol.Attribution({
+                                html: 'carte <a href="https://geobretagne.fr/geonetwork/apps/georchestra/?uuid=3303a14b-44af-4950-b067-f43ddc0f483f">GéoBretagne</a>,' +
+                                    'données contributeurs <a href="http://www.openstreetmap.org/">OpenStreetMap</a> <a href="http://www.openstreetmap.org/copyright">ODbL</a>'
+                            })
+                        ],
                         url: 'http://osm.geobretagne.fr/gwc01/service/tms/1.0.0/osm:map@EPSG%3A3857@jpeg/{z}/{x}/{-y}.png',
                     })
                 }),
-        //reseau
-        new ol.layer.Image({
+
+                    //reseau
+                    new ol.layer.Image({
                     source: new ol.source.ImageWMS({
                         url: 'http://geoxxx.agrocampus-ouest.fr/geoserver/wms',
                         params: {
@@ -196,7 +199,7 @@ customConfig = {
         lineage: true,
         status: true,
         describeWPS: 'http://wps.geosas.fr/simfen?service=WPS&version=1.0.0&request=describeProcess&identifier=transfr',
-        refreshTime: 45000
+        refreshTime: 10000
     },
 
     /**

@@ -454,11 +454,3 @@ td {
     word-wrap: break-word;
     overflow-wrap: break-word;
 }
-
-.graphFlow {
-    width: 430px;
-    margin-left:10px; 
-    margin-right:10px;
-    height: 200px;
-    border: 1px solid black;
-}

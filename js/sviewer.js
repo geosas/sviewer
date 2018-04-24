@@ -778,34 +778,34 @@ var SViewer = function () {
                     type: 'POST',
                     data: [
                     /*jshint multistr: true */
-'<?xml version="1.0" encoding="UTF-8"?> \
-<XLS xmlns:xls="http://www.opengis.net/xls" \
-xmlns:gml="http://www.opengis.net/gml" \
-xmlns="http://www.opengis.net/xls" \
-xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" \
-version="1.2" \
-xsi:schemaLocation="http://www.opengis.net/xls http://schemas.opengis.net/ols/1.2/olsAll.xsd"> \
-<RequestHeader/> \
-<Request maximumResponses="' + config.maxFeatures + '" requestID="1" version="1.2" methodName="LocationUtilityService"> \
-<GeocodeRequest returnFreeForm="false"> \
-<Address countryCode="',
-countryCode,
-'">\n \
-<freeFormAddress>',
-freeFormAddress,
-'</freeFormAddress> \
-<gml:envelope> \
-<gml:pos>',
-ol.extent.getBottomLeft(extent).reverse().join(" "),
-'</gml:pos> \
-<gml:pos>',
-ol.extent.getTopRight(extent).reverse().join(" "),
-'</gml:pos> \
-</gml:envelope> \
-</Address> \
-</GeocodeRequest> \
-</Request> \
-</XLS>'].join(""),
+                        '<?xml version="1.0" encoding="UTF-8"?> \
+                        <XLS xmlns:xls="http://www.opengis.net/xls" \
+                        xmlns:gml="http://www.opengis.net/gml" \
+                        xmlns="http://www.opengis.net/xls" \
+                        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" \
+                        version="1.2" \
+                        xsi:schemaLocation="http://www.opengis.net/xls http://schemas.opengis.net/ols/1.2/olsAll.xsd"> \
+                        <RequestHeader/> \
+                        <Request maximumResponses="' + config.maxFeatures + '" requestID="1" version="1.2" methodName="LocationUtilityService"> \
+                        <GeocodeRequest returnFreeForm="false"> \
+                        <Address countryCode="',
+                        countryCode,
+                        '">\n \
+                        <freeFormAddress>',
+                        freeFormAddress,
+                        '</freeFormAddress> \
+                        <gml:envelope> \
+                        <gml:pos>',
+                        ol.extent.getBottomLeft(extent).reverse().join(" "),
+                        '</gml:pos> \
+                        <gml:pos>',
+                        ol.extent.getTopRight(extent).reverse().join(" "),
+                        '</gml:pos> \
+                        </gml:envelope> \
+                        </Address> \
+                        </GeocodeRequest> \
+                        </Request> \
+                        </XLS>'].join(""),
                     contentType: "application/xml",
                     success: onOpenLSSuccess,
                     failure: onOpenLSFailure
@@ -1161,8 +1161,8 @@ ol.extent.getTopRight(extent).reverse().join(" "),
     /**
      * method : simfen/WPS
      * use sviewer for wps and dashboard
-     */   
-    
+     */
+
     function positionToL93(coordinate) {
         // Recupere la coordonnee du point clique en epsg:3857
         //var coordinate = e.coordinate;
@@ -1187,16 +1187,17 @@ ol.extent.getTopRight(extent).reverse().join(" "),
         return xhr;
     }
 
-    function resultLink(xmlDoc, strResult) {
+    function resultLink(xmlDoc, nameProcess) {
         // Recupere le tag et l'attribut contenant la page xml de resultat et
         // cree un lien pour y acceder
         var tagExecute = xmlDoc.getElementsByTagName('wps:ExecuteResponse')[0];
         var attrStatus = tagExecute.getAttribute("statusLocation");
-        // Cree un lien hypertext avec target blank
+        // Cree un lien hypertext avec target blank ayant pour nom celui
+        // renseigne auparavant
         var xmlResult = document.createElement("a");
         xmlResult.setAttribute("href", attrStatus);
         xmlResult.setAttribute("target", "_blank");
-        xmlResult.appendChild(document.createTextNode(strResult));
+        xmlResult.appendChild(document.createTextNode(nameProcess));
 
         var returnedObject = {};
         returnedObject["url"] = attrStatus;
@@ -1223,21 +1224,21 @@ ol.extent.getTopRight(extent).reverse().join(" "),
             return 'Error';
         }
     }
-    
-    function updateStatus(url, statusCell, statusUpdate) {
+
+    function updateStatus(url, statusCell, statusUpdate, nameProcess, downloadCell) {
         // Met a jour le statut en repetant cette requete
         // autant de fois que necessaire pour sortir de l'etat
         // process succeeded
         var xhrStatus = getXDomainRequest();
         xhrStatus.open("GET", ajaxURL(url), true);
-        xhrStatus.addEventListener('readystatechange', function() {
+        xhrStatus.addEventListener('readystatechange', function () {
             if (xhrStatus.readyState === XMLHttpRequest.DONE && xhrStatus.status === 200) {
                 var xmlStatus = xhrStatus.responseXML;
                 var etatStatus = getStatus(xmlStatus, statusCell);
                 if (etatStatus !== 'Process Accepted') {
                     clearInterval(statusUpdate);
                     if (etatStatus === 'Process Succeeded') {
-                        getPlotDatas(xmlStatus);
+                        getPlotDatas(xmlStatus, nameProcess, downloadCell);
                     }
                 }
             }
@@ -1245,10 +1246,42 @@ ol.extent.getTopRight(extent).reverse().join(" "),
         xhrStatus.send();
     }
 
-    function getPlotDatas(xmlResponse) {
+    // JSON to CSV Converter wps
+    function ConvertToCSV(objArray) {
+        var array = typeof objArray != 'object' ? JSON.parse(objArray) : objArray;
+        // header of csvfile
+        var str = 'date;runoff' + '\r\n';
+
+        for (var i = 0; i < array.length; i++) {
+            var line = '';
+            for (var index in array[i]) {
+                if (line != '') line += ';'
+                line += array[i][index];
+            }
+            str += line + '\r\n';
+        }
+        return str;
+    }
+
+    function getPlotDatas(xmlResponse, nameProcess, downloadCell) {
         var tagDatas = xmlResponse.getElementsByTagName('wps:ComplexData');
         var datasJson = tagDatas[0].textContent;
         var datas = JSON.parse(datasJson);
+
+        var jsonse = JSON.stringify(datas, null, "\t");
+        var jsonseToCSV = ConvertToCSV(jsonse);
+        var blob = new Blob([jsonseToCSV], {
+            type: "text/csv"
+        });
+        var url = URL.createObjectURL(blob);
+        var dlJson = document.createElement("a");
+        dlJson.setAttribute("href", url);
+        dlJson.setAttribute("target", "_blank");
+        dlJson.setAttribute("download", nameProcess + "_flow.csv");
+        dlJson.appendChild(document.createTextNode("download"));
+        downloadCell.id = nameProcess + "_dl";
+        document.getElementById(nameProcess + "_dl").appendChild(dlJson);
+
         var xDatas = [];
         var yDatas = [];
         for (var i = 0; i < datas.length; i++) {
@@ -1256,14 +1289,29 @@ ol.extent.getTopRight(extent).reverse().join(" "),
             yDatas = yDatas.concat(datas[i]["runoff"]);
         }
 
-        var trace1 = {
+        var trace = {
+            name: nameProcess,
             x: xDatas,
             y: yDatas,
-            type: 'scatter'
+            type: 'scatter',
         };
 
-        var plotDatas = [trace1];
-        Plotly.newPlot('graphFlowSimulated', plotDatas);
+        var layout = {
+            title: "Simulation flow",
+            xaxis: {
+                title: 'Date',
+            },
+            yaxis: {
+                title: 'm3/s'
+            },
+            showlegend: true,
+            legend: {
+                "orientation": "h"
+            }
+        };
+
+        var plotDatas = [trace];
+        Plotly.react('graphFlowSimulated', plotDatas, layout);
     }
 
     function wpsExe() {
@@ -1288,22 +1336,22 @@ ol.extent.getTopRight(extent).reverse().join(" "),
             submitHandler: function (form) {
                 coord = positionToL93(marker.getPosition());
                 var xhr = getXDomainRequest();
-                rqtWPS = config.wps.url_wps+
-                      "service="+config.wps.service+
-                      "&version="+config.wps.version+
-                      "&request="+config.wps.request+
-                      "&identifier="+config.wps.identifier+
-                      "&datainputs="+
-                        config.wps.datainputs.split("/")[0]+coord.split(',')[0]+
-                        config.wps.datainputs.split("/")[1]+coord.split(',')[1]+
-                        config.wps.datainputs.split("/")[2]+$("#dateStart").val()+
-                        config.wps.datainputs.split("/")[3]+$("#dateEnd").val()+
-                      "&storeExecuteResponse="+config.wps.storeExecuteResponse+
-                      "&lineage="+config.wps.lineage+
-                      "&status="+config.wps.status;
-                
+                rqtWPS = config.wps.url_wps +
+                    "service=" + config.wps.service +
+                    "&version=" + config.wps.version +
+                    "&request=" + config.wps.request +
+                    "&identifier=" + config.wps.identifier +
+                    "&datainputs=" +
+                    config.wps.datainputs.split("/")[0] + coord.split(',')[0] +
+                    config.wps.datainputs.split("/")[1] + coord.split(',')[1] +
+                    config.wps.datainputs.split("/")[2] + $("#dateStart").val() +
+                    config.wps.datainputs.split("/")[3] + $("#dateEnd").val() +
+                    "&storeExecuteResponse=" + config.wps.storeExecuteResponse +
+                    "&lineage=" + config.wps.lineage +
+                    "&status=" + config.wps.status;
+
                 xhr.open("GET", ajaxURL(rqtWPS.replace(/\s+/g, '')), true);
-                xhr.addEventListener('readystatechange', function() {
+                xhr.addEventListener('readystatechange', function () {
                     if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
                         // Recupere le xml de la requete
                         var xmlDoc = xhr.responseXML;
@@ -1314,6 +1362,7 @@ ol.extent.getTopRight(extent).reverse().join(" "),
                         // Insert a cell in the row at index 0
                         var linkCell = newRow.insertCell(0);
                         var statusCell = newRow.insertCell(1);
+                        var downloadCell = newRow.insertCell(2);
                         // Ajoute l'url du resultat dans cette cellule
                         var links = resultLink(xmlDoc, $("#nameProcess").val());
                         // defini l'id unique de la requete selon l'url du resultat
@@ -1323,8 +1372,8 @@ ol.extent.getTopRight(extent).reverse().join(" "),
                         var etatStatus = getStatus(xmlDoc, statusCell);
 
                         // Controle l'evolution du process et l'arrete au besoin
-                        var statusUpdate = setInterval(function() {
-                            updateStatus(links.url, statusCell, statusUpdate);
+                        var statusUpdate = setInterval(function () {
+                            updateStatus(links.url, statusCell, statusUpdate, $("#nameProcess").val(), downloadCell);
                         }, config.wps.refreshTime);
                     }
                 });
@@ -1341,7 +1390,7 @@ ol.extent.getTopRight(extent).reverse().join(" "),
             }
         });
     }
-    
+
 
     /**
      * method: feedbackForm
@@ -1904,8 +1953,8 @@ ol.extent.getTopRight(extent).reverse().join(" "),
         // map events
         map.on('singleclick', function (e) {
             queryMap(e.coordinate);
+            $('#panelWPS').popup('open');
         });
-
 
         map.on('moveend', setPermalink);
         $('#marker').click(clearQuery);
@@ -1928,12 +1977,12 @@ ol.extent.getTopRight(extent).reverse().join(" "),
         $('#georchestraForm').submit(function (e) {
             sendMapTo('georchestra_viewer');
         });
-        
+
         // wps form
         if (config.hasOwnProperty('wps')) {
             wpsExe();
         }
-        
+
         // feedback form handled by validation plugin,
         // activated if config.retrodata.url is valid
         if (config.hasOwnProperty('retrodata')) {
@@ -1955,7 +2004,6 @@ ol.extent.getTopRight(extent).reverse().join(" "),
         $('.sv-panel').bind('popupafterclose popupafteropen', panelToggle);
         $('#panelcontrols a').bind('click', panelButton);
 
-
         // i18n
         if (config.lang !== 'en') {
             translateDOM('.i18n', ['title', 'placeholder', 'value']);
@@ -1964,8 +2012,6 @@ ol.extent.getTopRight(extent).reverse().join(" "),
         // resize map
         $(window).bind("orientationchange resize pageshow", fixContentHeight);
         fixContentHeight();
-
-
 
         if (config.gfiok && (!(config.wmc.length > 0))) {
             setTimeout(

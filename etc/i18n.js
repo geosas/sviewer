@@ -20,7 +20,9 @@ $.extend(hardConfig, {
             'no item found': 'aucun objet n\'a été trouvé',
             'query failed': 'l\'interrogation a échoué',
             
-            'WPS': 'WPS',
+            'WPS': 'WPS SIMFEN',
+            'Date mandatory': 'Veuillez renseigner une date',
+            'Name mandatory': 'Veuillez renseigner un nom',
             
             'Feedback': 'Vos retours',
             'Your feedback about this map': 'Votre commentaire à propos de cette carte',
