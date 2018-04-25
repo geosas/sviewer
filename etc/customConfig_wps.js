@@ -194,7 +194,7 @@ customConfig = {
         version: "1.0.0",
         request: "Execute",
         identifier: "transfr",
-        datainputs: "X=/;Y=/;Start=/;End=",
+        datainputs: "X=/;Y=/;Start=/;End=/;Name=/;DeltaT=",
         storeExecuteResponse: true,
         lineage: true,
         status: true,

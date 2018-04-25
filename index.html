@@ -105,12 +105,31 @@
                 <a href="#" data-rel="back" class="i18n ui-btn ui-icon-delete ui-btn-icon-notext ui-corner-all ui-btn-right" title="Close">Close</a>
             </div>
             <div data-role="content" class="ui-mini">
+                <p>1- Veuillez cliquer à l'intérieur des polygones du réseau affiché afin de placer l'exutoire à simuler.</p>
+                <p>2- Indiquez les dates de début et de fin de simulation.</p>
+                <p>3- Choisir un nom qui va permettre d'identifier la simulation.</p>
+                <p>4- Executer la simulation (une simulation à la fois actuellement).</p>
+                <p>5- Attendre la fin du processus pour obtenir le lien de téléchargement et le graphique.</p>
+                
+                <hr color="black"> 
+                
                 <form id="wpsForm" method="POST" action="">
                 Start : <input type="date" id="dateStart" name="dateStart" min="2017-10-05" max="2017-12-10" value="2017-10-05">
                 End :<input type="date" id="dateEnd" name="dateEnd" min="2017-10-05" max="2017-12-10" value="2017-12-05">
+                    
+                <fieldset>
+                    <legend>Pas de temps des débits simulés : </legend>
+                    <input type="radio" id="journalier" name="deltaT" value=1440>
+                    <label for="journalier">journalier</label>
+                    <input type="radio" id="horaire" name="deltaT" value=60 checked="checked">
+                    <label for="horaire">horaire</label>
+                    <!--<input type="radio" id="minute" name="deltaT" value=1>
+                    <label for="minute">minute</label>-->
+                </fieldset>
+                    
                 Name : <input type="text" id="nameProcess" name= "nameProcess" placeholder="Give name">
                 <fieldset data-role="controlgroup" data-type="horizontal">
-                <button type="submit" data-icon="check" class="i18n" >Submit</button>
+                <button type="submit" data-icon="check" class="i18n">Submit</button>
                 </fieldset>
                 </form>
             </div>

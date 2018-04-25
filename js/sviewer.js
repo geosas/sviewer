@@ -1162,91 +1162,7 @@ var SViewer = function () {
      * method : simfen/WPS
      * use sviewer for wps and dashboard
      */
-
-    function positionToL93(coordinate) {
-        // Recupere la coordonnee du point clique en epsg:3857
-        //var coordinate = e.coordinate;
-        // Convertie la coordonnee en Lambert 93 (projection du wps)
-        var coordinateL93 = ol.proj.transform(coordinate, 'EPSG:3857', 'EPSG:2154');
-        // Initialise un arrondi a 2 decimale et l'applique sur la coordonnee en Lambert 93
-        var coordRounded = ol.coordinate.createStringXY(2);
-        var out = coordRounded(coordinateL93);
-        return out
-    }
-
-    // Cree la variable xmlrequest
-    function getXDomainRequest() {
-        var xhr = null;
-        if (window.XDomainRequest) {
-            xhr = new XDomainRequest();
-        } else if (window.XMLHttpRequest) {
-            xhr = new XMLHttpRequest();
-        } else {
-            alert("Erreur initialisation XMLHttpRequests");
-        }
-        return xhr;
-    }
-
-    function resultLink(xmlDoc, nameProcess) {
-        // Recupere le tag et l'attribut contenant la page xml de resultat et
-        // cree un lien pour y acceder
-        var tagExecute = xmlDoc.getElementsByTagName('wps:ExecuteResponse')[0];
-        var attrStatus = tagExecute.getAttribute("statusLocation");
-        // Cree un lien hypertext avec target blank ayant pour nom celui
-        // renseigne auparavant
-        var xmlResult = document.createElement("a");
-        xmlResult.setAttribute("href", attrStatus);
-        xmlResult.setAttribute("target", "_blank");
-        xmlResult.appendChild(document.createTextNode(nameProcess));
-
-        var returnedObject = {};
-        returnedObject["url"] = attrStatus;
-        returnedObject["link"] = xmlResult;
-        return returnedObject;
-    }
-
-    function getStatus(xmlDoc, statusCell) {
-        // Recupere le status de la requete wps et mets a jour
-        // celle ci dans le tableau de bord si necessaire
-        var tagStatus = xmlDoc.getElementsByTagName('wps:Status');
-        var status = tagStatus[0].childNodes[1];
-        if (status.nodeName === 'wps:ProcessAccepted') {
-            statusCell.innerHTML = 'Process Accepted';
-            return 'Process Accepted';
-        } else if (status.nodeName === 'wps:ProcessSucceeded') {
-            statusCell.innerHTML = 'Process Succeeded';
-            return 'Process Succeeded';
-        } else if (status.nodeName === 'wps:ProcessFailed') {
-            statusCell.innerHTML = 'Process Failed';
-            return 'Process Failed';
-        } else {
-            statusCell.innerHTML = 'Error';
-            return 'Error';
-        }
-    }
-
-    function updateStatus(url, statusCell, statusUpdate, nameProcess, downloadCell) {
-        // Met a jour le statut en repetant cette requete
-        // autant de fois que necessaire pour sortir de l'etat
-        // process succeeded
-        var xhrStatus = getXDomainRequest();
-        xhrStatus.open("GET", ajaxURL(url), true);
-        xhrStatus.addEventListener('readystatechange', function () {
-            if (xhrStatus.readyState === XMLHttpRequest.DONE && xhrStatus.status === 200) {
-                var xmlStatus = xhrStatus.responseXML;
-                var etatStatus = getStatus(xmlStatus, statusCell);
-                if (etatStatus !== 'Process Accepted') {
-                    clearInterval(statusUpdate);
-                    if (etatStatus === 'Process Succeeded') {
-                        getPlotDatas(xmlStatus, nameProcess, downloadCell);
-                    }
-                }
-            }
-        });
-        xhrStatus.send();
-    }
-
-    // JSON to CSV Converter wps
+    
     function ConvertToCSV(objArray) {
         var array = typeof objArray != 'object' ? JSON.parse(objArray) : objArray;
         // header of csvfile
@@ -1262,18 +1178,108 @@ var SViewer = function () {
         }
         return str;
     }
+    
+    function positionToL93(coordinate) {
+        // Recupere la coordonnee du point clique en epsg:3857
+        //var coordinate = e.coordinate;
+        // Convertie la coordonnee en Lambert 93 (projection du wps)
+        var coordinateL93 = ol.proj.transform(coordinate, 'EPSG:3857', 'EPSG:2154');
+        // Initialise un arrondi a 2 decimale et l'applique sur la coordonnee en Lambert 93
+        var coordRounded = ol.coordinate.createStringXY(2);
+        var out = coordRounded(coordinateL93);
+        return out;
+    }
 
-    function getPlotDatas(xmlResponse, nameProcess, downloadCell) {
-        var tagDatas = xmlResponse.getElementsByTagName('wps:ComplexData');
-        var datasJson = tagDatas[0].textContent;
-        var datas = JSON.parse(datasJson);
+    // Cree la variable xmlrequest
+    function getXDomainRequest() {
+        var xhr = null;
+        // sous internet explorer
+        if (window.XDomainRequest) {
+            xhr = new XDomainRequest();
+        // autres navigateurs
+        } else if (window.XMLHttpRequest) {
+            xhr = new XMLHttpRequest();
+        } else {
+            alert("Erreur initialisation XMLHttpRequests");
+        }
+        return xhr;
+    }
 
+    function resultLink(xmlDoc, nameProcess) {
+        // Recupere le tag et l'attribut contenant la page xml de resultat et cree un lien pour y acceder
+        var tagExecute = xmlDoc.getElementsByTagName('wps:ExecuteResponse')[0];
+        var locationXML = tagExecute.getAttribute("statusLocation");
+        // Cree un lien hypertext avec target blank ayant pour nom celui renseigne auparavant
+        // pour renvoyer au fichier xml contenant les resultats du wps
+        var xmlResult = document.createElement("a");
+        xmlResult.setAttribute("href", locationXML);
+        xmlResult.setAttribute("target", "_blank");
+        xmlResult.appendChild(document.createTextNode(nameProcess));
+        
+        // cree un object pour retourner l'url pour effectuer le suivi de l'evolution du
+        // traitement et le lien hypertexte pour y acceder
+        var returnedObject = {};
+        returnedObject["url"] = locationXML;
+        returnedObject["link"] = xmlResult;
+        return returnedObject;
+    }
+
+    function getStatus(xmlDoc, statusCell) {
+        // Recupere le status de la requete wps et mets a jour
+        // celle ci dans le tableau de bord si necessaire
+        var tagStatus = xmlDoc.getElementsByTagName('wps:Status');
+        var status = tagStatus[0].childNodes[1];
+        if (status.nodeName === 'wps:ProcessAccepted') { 
+            statusCell.innerHTML = "<img src=\"http://geowww.agrocampus-ouest.fr/simfen/sviewer/css/images/process.gif\" width=\"50px\" height=\"36px\">";
+            return 'Process Accepted';
+        } else if (status.nodeName === 'wps:ProcessSucceeded') {
+            statusCell.innerHTML = 'Process Succeeded';
+            return 'Process Succeeded';
+        } else if (status.nodeName === 'wps:ProcessFailed') {
+            statusCell.innerHTML = 'Process Failed';
+            return 'Process Failed';
+        } else {
+            statusCell.innerHTML = 'Error';
+            return 'Error';
+        }
+    }
+
+    function updateStatus(url, statusCell, statusUpdate, nameProcess, downloadCell) {
+        // Met a jour le statut en repetant cette requete
+        // autant de fois que necessaire pour sortir de l'etat process succeeded
+        var xhrStatus = getXDomainRequest();
+        // se connecte au fichier xml contenant le resultat du process et qui est mis a jour
+        // au fur et a mesure du traitement
+        xhrStatus.open("GET", ajaxURL(url), true);
+        xhrStatus.addEventListener('readystatechange', function () {
+            if (xhrStatus.readyState === XMLHttpRequest.DONE && xhrStatus.status === 200) {
+                // recupere la reponse de l'url
+                var xmlStatus = xhrStatus.responseXML;
+                // recupere et met a jour le status du traitement
+                var etatStatus = getStatus(xmlStatus, statusCell);
+                if (etatStatus !== 'Process Accepted') {
+                    // arrete l'ecoute du status puisque le process est termine
+                    clearInterval(statusUpdate);
+                    if (etatStatus === 'Process Succeeded') {
+                        // cree un graphique d'apres le resultat et mets en place un lien de telechargement
+                        plotDlDatas(xmlStatus, nameProcess, downloadCell);
+                    }
+                }
+            }
+        });
+        xhrStatus.send();
+    }
+    
+    function setDownloadFile(datas, nameProcess, downloadCell) {
+        // formate la variable contenant les donnees au format json
         var jsonse = JSON.stringify(datas, null, "\t");
         var jsonseToCSV = ConvertToCSV(jsonse);
         var blob = new Blob([jsonseToCSV], {
             type: "text/csv"
         });
         var url = URL.createObjectURL(blob);
+        // cree l'url de telechargement et lie le fichier blob a celui-ci
+        // et l'joute dans le tableau de bord
         var dlJson = document.createElement("a");
         dlJson.setAttribute("href", url);
         dlJson.setAttribute("target", "_blank");
@@ -1281,7 +1287,17 @@ var SViewer = function () {
         dlJson.appendChild(document.createTextNode("download"));
         downloadCell.id = nameProcess + "_dl";
         document.getElementById(nameProcess + "_dl").appendChild(dlJson);
-
+    }
+    
+    function plotDlDatas(xmlResponse, nameProcess, downloadCell) {
+        var tagDatas = xmlResponse.getElementsByTagName('wps:ComplexData');
+        var datasJson = tagDatas[0].textContent;
+        var datas = JSON.parse(datasJson);
+        
+        // cree un fichier contenant les donnees au format csv
+        // et permet son telechargement
+        setDownloadFile(datas, nameProcess, downloadCell);
+        
         var xDatas = [];
         var yDatas = [];
         for (var i = 0; i < datas.length; i++) {
@@ -1315,6 +1331,7 @@ var SViewer = function () {
     }
 
     function wpsExe() {
+        // permet de controler les donnees dans le formulaire
         $('#wpsForm').validate({
             debug: true,
             rules: {
@@ -1333,6 +1350,7 @@ var SViewer = function () {
                     maxlength: 75
                 }
             },
+            // recupere toutes les donnees dans le formulaire et execute le process
             submitHandler: function (form) {
                 coord = positionToL93(marker.getPosition());
                 var xhr = getXDomainRequest();
@@ -1346,10 +1364,12 @@ var SViewer = function () {
                     config.wps.datainputs.split("/")[1] + coord.split(',')[1] +
                     config.wps.datainputs.split("/")[2] + $("#dateStart").val() +
                     config.wps.datainputs.split("/")[3] + $("#dateEnd").val() +
+                    config.wps.datainputs.split("/")[4] + $("#nameProcess").val().replace(/ /g,"_") +
+                    config.wps.datainputs.split("/")[5] + $("input[name='deltaT']:checked").val() +
                     "&storeExecuteResponse=" + config.wps.storeExecuteResponse +
                     "&lineage=" + config.wps.lineage +
                     "&status=" + config.wps.status;
-
+                
                 xhr.open("GET", ajaxURL(rqtWPS.replace(/\s+/g, '')), true);
                 xhr.addEventListener('readystatechange', function () {
                     if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
@@ -1370,7 +1390,6 @@ var SViewer = function () {
                         document.getElementById(links.link).appendChild(links.link);
                         // Recupere le status du process
                         var etatStatus = getStatus(xmlDoc, statusCell);
-
                         // Controle l'evolution du process et l'arrete au besoin
                         var statusUpdate = setInterval(function () {
                             updateStatus(links.url, statusCell, statusUpdate, $("#nameProcess").val(), downloadCell);
