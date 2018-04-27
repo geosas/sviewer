@@ -199,7 +199,7 @@ customConfig = {
         lineage: true,
         status: true,
         describeWPS: 'http://wps.geosas.fr/simfen?service=WPS&version=1.0.0&request=describeProcess&identifier=transfr',
-        refreshTime: 10000
+        refreshTime: 15000
     },
 
     /**
