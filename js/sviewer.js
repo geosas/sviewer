@@ -1286,7 +1286,12 @@ var SViewer = function () {
         dlJson.setAttribute("download", nameProcess + "_flow.csv");
         dlJson.appendChild(document.createTextNode("download"));
         downloadCell.id = nameProcess + "_dl";
-        document.getElementById(nameProcess + "_dl").appendChild(dlJson);
+        // test pour ne pas ajouter plusieurs lien de telechargement dans la meme
+        // cellule si une requete est trop longue a s'executer
+        if (document.getElementById(nameProcess + "_dl").childNodes.length === 0){ 
+            document.getElementById(nameProcess + "_dl").appendChild(dlJson);
+        }
+        
     }
     
     function plotDlDatas(xmlResponse, nameProcess, downloadCell) {
