@@ -1224,13 +1224,18 @@ var SViewer = function () {
         return returnedObject;
     }
 
-    function getStatus(xmlDoc, statusCell) {
+    function getStatus(xmlDoc, statusCell, downloadCell) {
         // Recupere le status de la requete wps et mets a jour
         // celle ci dans le tableau de bord si necessaire
         var tagStatus = xmlDoc.getElementsByTagName('wps:Status');
         var status = tagStatus[0].childNodes[1];
         if (status.nodeName === 'wps:ProcessAccepted') { 
-            statusCell.innerHTML = "<img src=\"http://geowww.agrocampus-ouest.fr/simfen/sviewer/css/images/process.gif\" width=\"50px\" height=\"36px\">";
+            downloadCell.innerHTML = "<img src=\"http://geowww.agrocampus-ouest.fr/simfen/sviewer/css/images/process.gif\" width=\"50px\" height=\"36px\">";
+            statusCell.innerHTML = status.textContent;
+            return 'Process Accepted';
+        } else if (status.nodeName === 'wps:ProcessStarted') {
+            downloadCell.innerHTML = "<img src=\"http://geowww.agrocampus-ouest.fr/simfen/sviewer/css/images/process.gif\" width=\"50px\" height=\"36px\">";
+            statusCell.innerHTML = status.textContent;
             return 'Process Accepted';
         } else if (status.nodeName === 'wps:ProcessSucceeded') {
             statusCell.innerHTML = 'Process Succeeded';
@@ -1256,7 +1261,7 @@ var SViewer = function () {
                 // recupere la reponse de l'url
                 var xmlStatus = xhrStatus.responseXML;
                 // recupere et met a jour le status du traitement
-                var etatStatus = getStatus(xmlStatus, statusCell);
+                var etatStatus = getStatus(xmlStatus, statusCell, downloadCell);
                 if (etatStatus !== 'Process Accepted') {
                     // arrete l'ecoute du status puisque le process est termine
                     clearInterval(statusUpdate);
@@ -1288,7 +1293,7 @@ var SViewer = function () {
         downloadCell.id = nameProcess + "_dl";
         // test pour ne pas ajouter plusieurs lien de telechargement dans la meme
         // cellule si une requete est trop longue a s'executer
-        if (document.getElementById(nameProcess + "_dl").childNodes.length === 0){ 
+        if (document.getElementById(nameProcess + "_dl").childNodes.length === 1){ 
             document.getElementById(nameProcess + "_dl").appendChild(dlJson);
         }
         
@@ -1394,7 +1399,7 @@ var SViewer = function () {
                         linkCell.id = links.link;
                         document.getElementById(links.link).appendChild(links.link);
                         // Recupere le status du process
-                        var etatStatus = getStatus(xmlDoc, statusCell);
+                        var etatStatus = getStatus(xmlDoc, statusCell, downloadCell);
                         // Controle l'evolution du process et l'arrete au besoin
                         var statusUpdate = setInterval(function () {
                             updateStatus(links.url, statusCell, statusUpdate, $("#nameProcess").val(), downloadCell);
