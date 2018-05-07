@@ -1229,12 +1229,17 @@ var SViewer = function () {
         // celle ci dans le tableau de bord si necessaire
         var tagStatus = xmlDoc.getElementsByTagName('wps:Status');
         var status = tagStatus[0].childNodes[1];
-        if (status.nodeName === 'wps:ProcessAccepted') { 
-            downloadCell.innerHTML = "<img src=\"http://geowww.agrocampus-ouest.fr/simfen/sviewer/css/images/process.gif\" width=\"50px\" height=\"36px\">";
+        if (status.nodeName === 'wps:ProcessAccepted') {
+            downloadCell.innerHTML = "<img src=\"http://geowww.agrocampus-ouest.fr/simfen/sviewer/css/images/process.gif\" \
+                                            width=\"50px\" height=\"36px\">\
+                                      <p>0&#37;</p>";
             statusCell.innerHTML = status.textContent;
             return 'Process Accepted';
         } else if (status.nodeName === 'wps:ProcessStarted') {
-            downloadCell.innerHTML = "<img src=\"http://geowww.agrocampus-ouest.fr/simfen/sviewer/css/images/process.gif\" width=\"50px\" height=\"36px\">";
+            var percent = status.getAttribute("percentCompleted");
+            downloadCell.innerHTML = "<img src=\"http://geowww.agrocampus-ouest.fr/simfen/sviewer/css/images/process.gif\" \
+                                            width=\"50px\" height=\"36px\">\
+                                      <p>"+percent+"&#37;</p>";
             statusCell.innerHTML = status.textContent;
             return 'Process Accepted';
         } else if (status.nodeName === 'wps:ProcessSucceeded') {
@@ -1293,8 +1298,12 @@ var SViewer = function () {
         downloadCell.id = nameProcess + "_dl";
         // test pour ne pas ajouter plusieurs lien de telechargement dans la meme
         // cellule si une requete est trop longue a s'executer
-        if (document.getElementById(nameProcess + "_dl").childNodes.length === 1){ 
-            document.getElementById(nameProcess + "_dl").appendChild(dlJson);
+        var element = document.getElementById(nameProcess + "_dl")
+        while (element.firstChild){
+            element.removeChild(element.firstChild);
+        }
+        if (element.childNodes.length === 0){
+            element.appendChild(dlJson);
         }
         
     }
