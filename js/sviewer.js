@@ -1246,9 +1246,11 @@ var SViewer = function () {
             statusCell.innerHTML = 'Process Succeeded';
             return 'Process Succeeded';
         } else if (status.nodeName === 'wps:ProcessFailed') {
+            downloadCell.innerHTML = "<p></p>";
             statusCell.innerHTML = 'Process Failed';
             return 'Process Failed';
         } else {
+            downloadCell.innerHTML = "<p></p>";
             statusCell.innerHTML = 'Error';
             return 'Error';
         }
