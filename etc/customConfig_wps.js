@@ -61,7 +61,7 @@ customConfig = {
                     source: new ol.source.ImageWMS({
                         url: 'http://geoxxx.agrocampus-ouest.fr/geoserver/wms',
                         params: {
-                            'LAYERS': 'donatien:reseau'
+                            'LAYERS': 'donatien:reseau_carthage_fill_burn_25m'
                         },
                         serverType: 'geoserver'
                     })
@@ -194,12 +194,12 @@ customConfig = {
         version: "1.0.0",
         request: "Execute",
         identifier: "transfr",
-        datainputs: "X=/;Y=/;Start=/;End=/;Name=/;DeltaT=",
+        datainputs: "X=/;Y=/;Start=/;End=/;Name=/;DeltaT=/;InBasin=",
         storeExecuteResponse: true,
         lineage: true,
         status: true,
         describeWPS: 'http://wps.geosas.fr/simfen?service=WPS&version=1.0.0&request=describeProcess&identifier=transfr',
-        refreshTime: 5000
+        refreshTime: 1000
     },
 
     /**

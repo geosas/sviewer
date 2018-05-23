@@ -1311,7 +1311,7 @@ var SViewer = function () {
     }
     
     function plotDlDatas(xmlResponse, nameProcess, downloadCell) {
-        var tagDatas = xmlResponse.getElementsByTagName('wps:ComplexData');
+        var tagDatas = xmlResponse.getElementsByTagName('wps:LiteralData');
         var datasJson = tagDatas[0].textContent;
         var datas = JSON.parse(datasJson);
         
@@ -1375,6 +1375,15 @@ var SViewer = function () {
             submitHandler: function (form) {
                 coord = positionToL93(marker.getPosition());
                 var xhr = getXDomainRequest();
+                
+                // Test pour savoir s'il ne faut utiliser que les stations incluses dans le
+                // bassin cible
+                if ($("input[name='inBasin']")[0].checked){
+                    inBasin = "True";
+                } else {
+                    inBasin = "False";
+                }
+                
                 rqtWPS = config.wps.url_wps +
                     "service=" + config.wps.service +
                     "&version=" + config.wps.version +
@@ -1387,6 +1396,7 @@ var SViewer = function () {
                     config.wps.datainputs.split("/")[3] + $("#dateEnd").val() +
                     config.wps.datainputs.split("/")[4] + $("#nameProcess").val().replace(/ /g,"_") +
                     config.wps.datainputs.split("/")[5] + $("input[name='deltaT']:checked").val() +
+                    config.wps.datainputs.split("/")[6] + inBasin +
                     "&storeExecuteResponse=" + config.wps.storeExecuteResponse +
                     "&lineage=" + config.wps.lineage +
                     "&status=" + config.wps.status;
