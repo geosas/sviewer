@@ -1275,6 +1275,8 @@ var SViewer = function () {
                     if (etatStatus === 'Process Succeeded') {
                         // cree un graphique d'apres le resultat et mets en place un lien de telechargement
                         plotDlDatas(xmlStatus, nameProcess, downloadCell);
+                        // Affiche les stations employees
+                        //plotStation(xmlStatus);
                     }
                 }
             }
@@ -1310,9 +1312,66 @@ var SViewer = function () {
         
     }
     
+    function plotStation(xmlResponse){
+        // Recupere uniquement les datas du child correspondant au debit
+        var docProcessOutputs = xmlResponse.getElementsByTagName("wps:ProcessOutputs");
+        for (var i = 0; i < docProcessOutputs.length; i++) { 
+            try {
+                // Controle que nous sommes bien dans la balide correspondant au debit
+                if (docProcessOutputs[i].childNodes[1].children[0].textContent==='Stations'){
+                    // recupere les donnees dans la balise wps:Data
+                    var datasJson = docProcessOutputs[i].childNodes[1].children[2].textContent;
+                }
+            }
+            catch(error) {
+                break;
+            }	
+        }
+        
+        // Fonction pour localiser les stations qui ont ete employee pour l'inversion
+        var testCoord = ol.proj.transform([x,y], 'EPSG:2154', 'EPSG:3857');
+
+        var geojsonObject = {
+            'type': 'FeatureCollection',
+            'crs': {
+              'type': 'name',
+            'properties': {
+              'name': 'EPSG:3857'
+          }
+        },
+            'features': [{
+            'type': 'Feature',
+            'geometry': {
+            'type': 'Point',
+            'coordinates': testCoord
+            }
+            }]
+        };
+        var vectorSource = new ol.source.Vector({
+        features: (new ol.format.GeoJSON()).readFeatures(geojsonObject)
+      });
+        var vectorLayer = new ol.layer.Vector({
+        source: vectorSource
+      });
+        map.addLayer(vectorLayer);
+    }
+    
     function plotDlDatas(xmlResponse, nameProcess, downloadCell) {
-        var tagDatas = xmlResponse.getElementsByTagName('wps:LiteralData');
-        var datasJson = tagDatas[0].textContent;
+        // Recupere uniquement les datas du child correspondant au debit
+        var docProcessOutputs = xmlResponse.getElementsByTagName("wps:ProcessOutputs");
+        for (var i = 0; i < docProcessOutputs.length; i++) { 
+            try {
+                // Controle que nous sommes bien dans la balide correspondant au debit
+                if (docProcessOutputs[i].childNodes[1].children[0].textContent==='Flow'){
+                    // recupere les donnees dans la balise wps:Data
+                    var datasJson = docProcessOutputs[i].childNodes[1].children[2].textContent;
+                }
+            }
+            catch(error) {
+                break;
+            }	
+        }
+
         var datas = JSON.parse(datasJson);
         
         // cree un fichier contenant les donnees au format csv
