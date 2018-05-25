@@ -1327,12 +1327,20 @@ var SViewer = function () {
     }
 
     function plotStation(xmlResponse) {
-        // Recupere uniquement les datas du child correspondant au debit
+        /*recupere dans le document xml les informations spatiales des stations
+        pour ensuite les afficher sur la carte. Si une couche de station a deja ete
+        produite, la supprime avant*/
+        
+        // identifie la balise de sortie
         var docProcessOutputs = xmlResponse.getElementsByTagName("wps:ProcessOutputs");
+        // recupere au format texte la partie du xml correspondant au resultat contenant les stations
         var gmlStations = docProcessOutputs[0].childNodes[3].children[2].outerHTML;
+        // converti la chaine de texte en objet xml
         var gmlStationsXML = StringToXMLDom(gmlStations);
+        // pour chaque entite (station)
         var features = gmlStationsXML.getElementsByTagName("gml:featureMember");
         
+        // defini un style des points
         var style = new ol.style.Style({
                 fill: new ol.style.Fill({
                     color: 'rgba(255, 100, 50, 1)'
@@ -1353,6 +1361,7 @@ var SViewer = function () {
                 }),
             });
         
+        // supprime la precedente couche de station si elle existe
         var layersToRemove = [];
         map.getLayers().forEach(function (layer) {
         if (layer.get('name') != undefined && layer.get('name') === 'stations') {
@@ -1365,26 +1374,32 @@ var SViewer = function () {
             map.removeLayer(layersToRemove[i]);
         }
         
+        // initialise la source de donnees qui va contenir les entites
         var stationSource = new ol.source.Vector({});
         
+        // cree le vecteur qui va contenir les stations
         var stationLayer = new ol.layer.Vector({
             name: "stations",
             source: stationSource,
             style: style
         });
-     
+        
+        // pour chaque entite
         for (var i = 0; i < features.length; i++) {
+            // recupere sa coordonnees et son nom
             coord = gmlStationsXML.getElementsByTagName("gml:coordinates")[i].textContent.split(",");
             nameStation = gmlStationsXML.getElementsByTagName("ogr:CDSTATIONH")[i].textContent;
+            // cree le point en veillant a changer la projection
             var featureGeom = new ol.geom.Point(ol.proj.transform([coord[0],coord[1]], 'EPSG:2154', 'EPSG:3857'));
+            // cree la feature
             var featureThing = new ol.Feature({
                 name: nameStation,
                 geometry: featureGeom
             });
+            // ajoute la feature a la source
             stationSource.addFeature(featureThing);
         }
-        // Fonction pour localiser les stations qui ont ete employee pour l'inversion
-        //var testCoord = ol.proj.transform([x, y], 'EPSG:2154', 'EPSG:3857');
+        // ajoute la couche de point des stations a la carte
         map.addLayer(stationLayer);
     }
 
