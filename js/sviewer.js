@@ -1330,25 +1330,9 @@ var SViewer = function () {
         /*recupere dans le document xml les informations spatiales des stations
         pour ensuite les afficher sur la carte. Si une couche de station a deja ete
         produite, la supprime avant*/
-        
-        // identifie la balise de sortie
-        var docProcessOutputs = xmlResponse.getElementsByTagName("wps:ProcessOutputs");
-        // recupere au format texte la partie du xml correspondant au resultat contenant les stations
-        var gmlStations = docProcessOutputs[0].childNodes[3].children[2].outerHTML;
-        // converti la chaine de texte en objet xml
-        var gmlStationsXML = StringToXMLDom(gmlStations);
-        // pour chaque entite (station)
-        var features = gmlStationsXML.getElementsByTagName("gml:featureMember");
-        
-        // defini un style des points
-        var style = new ol.style.Style({
-                fill: new ol.style.Fill({
-                    color: 'rgba(255, 100, 50, 1)'
-                }),
-                stroke: new ol.style.Stroke({
-                    width: 2,
-                    color: 'rgba(255, 100, 50, 1)'
-                }),
+
+        function pointStyleFunction(feature) {
+            return new ol.style.Style({
                 image: new ol.style.Circle({
                     fill: new ol.style.Fill({
                         color: 'rgba(200, 0, 0, 1)'
@@ -1359,38 +1343,76 @@ var SViewer = function () {
                     }),
                     radius: 7
                 }),
+                text: createTextStyle(feature)
             });
-        
+        }
+
+        var createTextStyle = function (feature) {
+            return new ol.style.Text({
+                font: '12px Calibri,sans-serif',
+                text: feature.get('name'),
+                fill: new ol.style.Fill({
+                    color: '#000'
+                }),
+                stroke: new ol.style.Stroke({
+                    color: '#fff',
+                    width: 5
+                })
+            });
+        };
+
+        // identifie la balise de sortie
+        var docProcessOutputs = xmlResponse.getElementsByTagName("wps:ProcessOutputs");
+        // recupere au format texte la partie du xml correspondant au resultat contenant les stations
+        var gmlStations = docProcessOutputs[0].childNodes[3].children[2].outerHTML;
+        // converti la chaine de texte en objet xml
+        var gmlStationsXML = StringToXMLDom(gmlStations);
+        // pour chaque entite (station)
+        var features = gmlStationsXML.getElementsByTagName("gml:featureMember");
+
+        var style = new ol.style.Style({
+            image: new ol.style.Circle({
+                fill: new ol.style.Fill({
+                    color: 'rgba(200, 0, 0, 1)'
+                }),
+                stroke: new ol.style.Stroke({
+                    width: 1,
+                    color: 'rgba(200, 0, 0, 1)'
+                }),
+                radius: 7
+            }),
+        });
+
         // supprime la precedente couche de station si elle existe
         var layersToRemove = [];
         map.getLayers().forEach(function (layer) {
-        if (layer.get('name') != undefined && layer.get('name') === 'stations') {
-            layersToRemove.push(layer);
-        }
+            if (layer.get('name') != undefined && layer.get('name') === 'stations') {
+                layersToRemove.push(layer);
+            }
         });
 
         var len = layersToRemove.length;
-        for(var i = 0; i < len; i++) {
+        for (var i = 0; i < len; i++) {
             map.removeLayer(layersToRemove[i]);
         }
-        
+
         // initialise la source de donnees qui va contenir les entites
         var stationSource = new ol.source.Vector({});
-        
+
         // cree le vecteur qui va contenir les stations
         var stationLayer = new ol.layer.Vector({
             name: "stations",
             source: stationSource,
-            style: style
+            style: pointStyleFunction
         });
-        
+
         // pour chaque entite
         for (var i = 0; i < features.length; i++) {
             // recupere sa coordonnees et son nom
             coord = gmlStationsXML.getElementsByTagName("gml:coordinates")[i].textContent.split(",");
             nameStation = gmlStationsXML.getElementsByTagName("ogr:CDSTATIONH")[i].textContent;
             // cree le point en veillant a changer la projection
-            var featureGeom = new ol.geom.Point(ol.proj.transform([coord[0],coord[1]], 'EPSG:2154', 'EPSG:3857'));
+            var featureGeom = new ol.geom.Point(ol.proj.transform([coord[0], coord[1]], 'EPSG:2154', 'EPSG:3857'));
             // cree la feature
             var featureThing = new ol.Feature({
                 name: nameStation,
