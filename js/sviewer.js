@@ -1351,6 +1351,7 @@ var SViewer = function () {
             return new ol.style.Text({
                 font: '12px Calibri,sans-serif',
                 text: feature.get('name'),
+                offsetY: 20,
                 fill: new ol.style.Fill({
                     color: '#000'
                 }),
