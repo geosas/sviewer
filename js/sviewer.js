@@ -1371,19 +1371,6 @@ var SViewer = function () {
         // pour chaque entite (station)
         var features = gmlStationsXML.getElementsByTagName("gml:featureMember");
 
-        var style = new ol.style.Style({
-            image: new ol.style.Circle({
-                fill: new ol.style.Fill({
-                    color: 'rgba(200, 0, 0, 1)'
-                }),
-                stroke: new ol.style.Stroke({
-                    width: 1,
-                    color: 'rgba(200, 0, 0, 1)'
-                }),
-                radius: 7
-            }),
-        });
-
         // supprime la precedente couche de station si elle existe
         var layersToRemove = [];
         map.getLayers().forEach(function (layer) {
