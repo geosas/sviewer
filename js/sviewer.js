@@ -1163,7 +1163,7 @@ var SViewer = function () {
      * use sviewer for wps and dashboard
      */
 
-    function ConvertToCSV(objArray) {
+    /*function ConvertToCSV(objArray) {
         var array = typeof objArray != 'object' ? JSON.parse(objArray) : objArray;
         // header of csvfile
         var str = 'date;runoff' + '\r\n';
@@ -1177,7 +1177,7 @@ var SViewer = function () {
             str += line + '\r\n';
         }
         return str;
-    }
+    }*/
 
     function positionToL93(coordinate) {
         // Recupere la coordonnee du point clique en epsg:3857
@@ -1224,10 +1224,9 @@ var SViewer = function () {
         return returnedObject;
     }
 
-    function getStatus(xmlDoc, statusCell, downloadCell) {
+    function setStatus(tagStatus, statusCell, downloadCell) {
         // Recupere le status de la requete wps et mets a jour
         // celle ci dans le tableau de bord si necessaire
-        var tagStatus = xmlDoc.getElementsByTagName('wps:Status');
         var status = tagStatus[0].childNodes[1];
         if (status.nodeName === 'wps:ProcessAccepted') {
             downloadCell.innerHTML = "<img src=\"http://geowww.agrocampus-ouest.fr/simfen/sviewer/css/images/process.gif\" \
@@ -1268,7 +1267,8 @@ var SViewer = function () {
                 // recupere la reponse de l'url
                 var xmlStatus = xhrStatus.responseXML;
                 // recupere et met a jour le status du traitement
-                var etatStatus = getStatus(xmlStatus, statusCell, downloadCell);
+                var tagStatus = xmlStatus.getElementsByTagName('wps:Status');
+                var etatStatus = setStatus(tagStatus, statusCell, downloadCell);
                 if (etatStatus !== 'Process Accepted') {
                     // arrete l'ecoute du status puisque le process est termine
                     clearInterval(statusUpdate);
@@ -1284,7 +1284,7 @@ var SViewer = function () {
         xhrStatus.send();
     }
 
-    function setDownloadFile(datas, nameProcess, downloadCell) {
+    /*function setDownloadFile2(datas, nameProcess, downloadCell) {
         // formate la variable contenant les donnees au format json
         var jsonse = JSON.stringify(datas, null, "\t");
         var jsonseToCSV = ConvertToCSV(jsonse);
@@ -1309,8 +1309,43 @@ var SViewer = function () {
         if (element.childNodes.length === 0) {
             element.appendChild(dlJson);
         }
-
     }
+*/
+    function setDownloadFile(datasx, datasy, nameProcess, downloadCell) {
+        // header of csvfile
+        var str = 'date;runoff' + '\r\n';
+
+        // construit chaque ligne du csv selon les donnees
+        for (var i = 0; i < datasx.length; i++) {
+            var line = '';
+            line += datasx[i] + ";" + datasy[i]
+            str += line + '\r\n';
+        }
+
+        // cree le csv
+        var blob = new Blob([str], {
+            type: "text/csv"
+        });
+        var url = URL.createObjectURL(blob);
+        // cree l'url de telechargement et lie le fichier blob a celui-ci
+        // et l'joute dans le tableau de bord
+        var dlJson = document.createElement("a");
+        dlJson.setAttribute("href", url);
+        dlJson.setAttribute("target", "_blank");
+        dlJson.setAttribute("download", nameProcess + "_flow.csv");
+        dlJson.appendChild(document.createTextNode("download"));
+        downloadCell.id = nameProcess + "_dl";
+        // test pour ne pas ajouter plusieurs lien de telechargement dans la meme
+        // cellule si une requete est trop longue a s'executer
+        var element = document.getElementById(nameProcess + "_dl")
+        while (element.firstChild) {
+            element.removeChild(element.firstChild);
+        }
+        if (element.childNodes.length === 0) {
+            element.appendChild(dlJson);
+        }
+    }
+
 
     function StringToXMLDom(string) {
         var xmlDoc = null;
@@ -1365,55 +1400,118 @@ var SViewer = function () {
         // identifie la balise de sortie
         var docProcessOutputs = xmlResponse.getElementsByTagName("wps:ProcessOutputs");
         // recupere au format texte la partie du xml correspondant au resultat contenant les stations
-        var gmlStations = docProcessOutputs[0].childNodes[3].children[2].outerHTML;
-        // converti la chaine de texte en objet xml
-        var gmlStationsXML = StringToXMLDom(gmlStations);
-        // pour chaque entite (station)
-        var features = gmlStationsXML.getElementsByTagName("gml:featureMember");
+        for (var i = 0; i < docProcessOutputs[0].childNodes.length; i++) {
+            try {
+                // Controle que nous sommes bien dans la balide correspondant au debit
+                if (docProcessOutputs[0].childNodes[i].children[0].textContent === 'Stations') {
+                    var gmlStations = docProcessOutputs[0].childNodes[i].children[2].outerHTML;
+                    // converti la chaine de texte en objet xml
+                    var gmlStationsXML = StringToXMLDom(gmlStations);
+                    // pour chaque entite (station)
+                    var features = gmlStationsXML.getElementsByTagName("gml:featureMember");
 
-        // supprime la precedente couche de station si elle existe
-        var layersToRemove = [];
-        map.getLayers().forEach(function (layer) {
-            if (layer.get('name') != undefined && layer.get('name') === 'stations') {
-                layersToRemove.push(layer);
+                    // supprime la precedente couche de station si elle existe
+                    var layersToRemove = [];
+                    map.getLayers().forEach(function (layer) {
+                        if (layer.get('name') != undefined && layer.get('name') === 'stations') {
+                            layersToRemove.push(layer);
+                        }
+                    });
+
+                    var len = layersToRemove.length;
+                    for (var i = 0; i < len; i++) {
+                        map.removeLayer(layersToRemove[i]);
+                    }
+
+                    // initialise la source de donnees qui va contenir les entites
+                    var stationSource = new ol.source.Vector({});
+
+                    // cree le vecteur qui va contenir les stations
+                    var stationLayer = new ol.layer.Vector({
+                        name: "stations",
+                        source: stationSource,
+                        style: pointStyleFunction
+                    });
+
+                    // pour chaque entite
+                    for (var i = 0; i < features.length; i++) {
+                        // recupere sa coordonnees et son nom
+                        coord = gmlStationsXML.getElementsByTagName("gml:coordinates")[i].textContent.split(",");
+                        nameStation = gmlStationsXML.getElementsByTagName("ogr:CDSTATIONH")[i].textContent;
+                        // cree le point en veillant a changer la projection
+                        var featureGeom = new ol.geom.Point(ol.proj.transform([coord[0], coord[1]], 'EPSG:2154', 'EPSG:3857'));
+                        // cree la feature
+                        var featureThing = new ol.Feature({
+                            name: nameStation,
+                            geometry: featureGeom
+                        });
+                        // ajoute la feature a la source
+                        stationSource.addFeature(featureThing);
+                    }
+                    // ajoute la couche de point des stations a la carte
+                    map.addLayer(stationLayer);
+                }
+            } catch (error) {
+                continue;
             }
-        });
-
-        var len = layersToRemove.length;
-        for (var i = 0; i < len; i++) {
-            map.removeLayer(layersToRemove[i]);
         }
-
-        // initialise la source de donnees qui va contenir les entites
-        var stationSource = new ol.source.Vector({});
-
-        // cree le vecteur qui va contenir les stations
-        var stationLayer = new ol.layer.Vector({
-            name: "stations",
-            source: stationSource,
-            style: pointStyleFunction
-        });
-
-        // pour chaque entite
-        for (var i = 0; i < features.length; i++) {
-            // recupere sa coordonnees et son nom
-            coord = gmlStationsXML.getElementsByTagName("gml:coordinates")[i].textContent.split(",");
-            nameStation = gmlStationsXML.getElementsByTagName("ogr:CDSTATIONH")[i].textContent;
-            // cree le point en veillant a changer la projection
-            var featureGeom = new ol.geom.Point(ol.proj.transform([coord[0], coord[1]], 'EPSG:2154', 'EPSG:3857'));
-            // cree la feature
-            var featureThing = new ol.Feature({
-                name: nameStation,
-                geometry: featureGeom
-            });
-            // ajoute la feature a la source
-            stationSource.addFeature(featureThing);
-        }
-        // ajoute la couche de point des stations a la carte
-        map.addLayer(stationLayer);
     }
 
+
     function plotDlDatas(xmlResponse, nameProcess, downloadCell) {
+        // Recupere uniquement les datas du child correspondant au debit
+        var docProcessOutputs = xmlResponse.getElementsByTagName("wps:ProcessOutputs");
+        for (var i = 0; i < docProcessOutputs[0].childNodes.length; i++) {
+            try {
+                // Controle que nous sommes bien dans la balide correspondant au debit
+                if (docProcessOutputs[0].childNodes[i].children[0].textContent === 'WaterML') {
+                    // recupere les donnees dans la balise wps:Data
+                    var stringWaterML = docProcessOutputs[0].childNodes[i].children[2].innerHTML;
+                    var docWaterML = StringToXMLDom(stringWaterML);
+                    var points = docWaterML.getElementsByTagName("wml2:point");
+                }
+            } catch (error) {
+                continue;
+            }
+        }
+
+        var xDatas = [];
+        var yDatas = [];
+        for (var i = 0; i < points.length; i++) {
+            xDatas = xDatas.concat(points[i].childNodes[1].children[0].textContent);
+            yDatas = yDatas.concat(points[i].childNodes[1].children[1].textContent);
+        }
+
+        // cree un fichier contenant les donnees au format csv
+        // et permet son telechargement
+        setDownloadFile(xDatas, yDatas, nameProcess, downloadCell);
+
+        var trace = {
+            name: nameProcess,
+            x: xDatas,
+            y: yDatas,
+            type: 'scatter',
+        };
+
+        var layout = {
+            title: "Simulation flow",
+            xaxis: {
+                title: 'Date',
+            },
+            yaxis: {
+                title: 'm3/s'
+            },
+            showlegend: true,
+            legend: {
+                "orientation": "h"
+            }
+        };
+
+        var plotDatas = [trace];
+        Plotly.react('graphFlowSimulated', plotDatas, layout);
+    }
+
+    /*function plotDlDatasjson(xmlResponse, nameProcess, downloadCell) {
         // Recupere uniquement les datas du child correspondant au debit
         var docProcessOutputs = xmlResponse.getElementsByTagName("wps:ProcessOutputs");
         for (var i = 0; i < docProcessOutputs.length; i++) {
@@ -1464,8 +1562,125 @@ var SViewer = function () {
 
         var plotDatas = [trace];
         Plotly.react('graphFlowSimulated', plotDatas, layout);
+    }*/
+
+    function dashboard() {
+        // Se connecte au tableau de bord
+        var tableRef = document.getElementById('panelWPS').getElementsByTagName('tbody')[0];
+        // Insert a row in the table at the last row
+        var newRow = tableRef.insertRow(tableRef.rows.length);
+        // Insert a cell in the row at index 0
+        var linkCell = newRow.insertCell(0);
+        var statusCell = newRow.insertCell(1);
+        var downloadCell = newRow.insertCell(2);
+
+        return [linkCell, statusCell, downloadCell];
     }
 
+    function updateStations(updating, url) {
+        // Met a jour le statut en repetant cette requete
+        // autant de fois que necessaire pour sortir de l'etat process succeeded
+        var xhrResult = getXDomainRequest();
+        // se connecte au fichier xml contenant le resultat du process et qui est mis a jour
+        // au fur et a mesure du traitement
+        xhrResult.open("GET", ajaxURL(url), true);
+        xhrResult.addEventListener('readystatechange', function () {
+            if (xhrResult.readyState === XMLHttpRequest.DONE && xhrResult.status === 200) {
+                // recupere la reponse de l'url
+                var xmlResult = xhrResult.responseXML;
+                // recupere et met a jour le status du traitement
+                var tagStatus = xmlResult.getElementsByTagName('wps:Status');
+                var status = tagStatus[0].childNodes[1].nodeName;
+
+                if (status !== 'wps:ProcessAccepted' && status !== 'wps:ProcessStarted') {
+                    // arrete l'ecoute du status puisque le process est termine
+                    clearInterval(updating);
+                    if (status === 'wps:ProcessSucceeded') {
+                        // Affiche les stations employees
+                        plotStation(xmlResult);
+                    }
+                }
+            }
+        });
+        xhrResult.send();
+    }
+
+    function getStations(xhr) {
+        rqtWPS = config.wps.url_wps +
+            "service=" + config.wps.service +
+            "&version=" + config.wps.version +
+            "&request=" + config.wps.request +
+            "&identifier=" + config.wps.idGetStation +
+            "&datainputs=" +
+            config.wps.datainputs.split("/")[0] + coord.split(',')[0] +
+            config.wps.datainputs.split("/")[1] + coord.split(',')[1] +
+            config.wps.datainputs.split("/")[2] + $("#dateStart").val() +
+            config.wps.datainputs.split("/")[3] + $("#dateEnd").val() +
+            config.wps.datainputs.split("/")[4] + $("#nameProcess").val().replace(/ /g, "_") +
+            config.wps.datainputs.split("/")[6] + inBasin +
+            "&storeExecuteResponse=" + config.wps.storeExecuteResponse +
+            "&lineage=" + config.wps.lineage +
+            "&status=" + config.wps.status;
+
+        xhr.open("GET", ajaxURL(rqtWPS.replace(/\s+/g, '')), true);
+        xhr.addEventListener('readystatechange', function () {
+            if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+                // Recupere le xml de la requete
+                var xmlDoc = xhr.responseXML;
+                // Recupere le status du process
+                var tagStatus = xmlDoc.getElementsByTagName('wps:Status');
+                var links = resultLink(xmlDoc, $("#nameProcess").val());
+                // Controle l'evolution du process et l'arrete au besoin
+                var updating = setInterval(function () {
+                    updateStations(updating, links.url);
+                }, config.wps.refreshTime);
+            }
+        });
+        xhr.send();
+    }
+    
+    function transfr(xhr){
+        rqtWPS = config.wps.url_wps +
+            "service=" + config.wps.service +
+            "&version=" + config.wps.version +
+            "&request=" + config.wps.request +
+            "&identifier=" + config.wps.idModel +
+            "&datainputs=" +
+            config.wps.datainputs.split("/")[0] + coord.split(',')[0] +
+            config.wps.datainputs.split("/")[1] + coord.split(',')[1] +
+            config.wps.datainputs.split("/")[2] + $("#dateStart").val() +
+            config.wps.datainputs.split("/")[3] + $("#dateEnd").val() +
+            config.wps.datainputs.split("/")[4] + $("#nameProcess").val().replace(/ /g, "_") +
+            config.wps.datainputs.split("/")[5] + $("input[name='deltaT']:checked").val() +
+            config.wps.datainputs.split("/")[6] + inBasin +
+            "&storeExecuteResponse=" + config.wps.storeExecuteResponse +
+            "&lineage=" + config.wps.lineage +
+            "&status=" + config.wps.status;
+
+        xhr.open("GET", ajaxURL(rqtWPS.replace(/\s+/g, '')), true);
+        xhr.addEventListener('readystatechange', function () {
+            if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+                // Recupere le xml de la requete
+                var xmlDoc = xhr.responseXML;
+                // Se connecte au tableau de bord
+                var cells = dashboard()
+                // Ajoute l'url du resultat dans cette cellule
+                var links = resultLink(xmlDoc, $("#nameProcess").val());
+                // defini l'id unique de la requete selon l'url du resultat
+                cells[0].id = links.link;
+                document.getElementById(links.link).appendChild(links.link);
+                // Recupere le status du process
+                var tagStatus = xmlDoc.getElementsByTagName('wps:Status');
+                var etatStatus = setStatus(tagStatus, cells[1], cells[2]);
+                // Controle l'evolution du process et l'arrete au besoin
+                var statusUpdate = setInterval(function () {
+                    updateStatus(links.url, cells[1], statusUpdate, $("#nameProcess").val(), cells[2]);
+                }, config.wps.refreshTime);
+            }
+        });
+        xhr.send();
+    }
+    
     function wpsExe() {
         // permet de controler les donnees dans le formulaire
         $('#wpsForm').validate({
@@ -1499,50 +1714,11 @@ var SViewer = function () {
                     inBasin = "False";
                 }
 
-                rqtWPS = config.wps.url_wps +
-                    "service=" + config.wps.service +
-                    "&version=" + config.wps.version +
-                    "&request=" + config.wps.request +
-                    "&identifier=" + config.wps.identifier +
-                    "&datainputs=" +
-                    config.wps.datainputs.split("/")[0] + coord.split(',')[0] +
-                    config.wps.datainputs.split("/")[1] + coord.split(',')[1] +
-                    config.wps.datainputs.split("/")[2] + $("#dateStart").val() +
-                    config.wps.datainputs.split("/")[3] + $("#dateEnd").val() +
-                    config.wps.datainputs.split("/")[4] + $("#nameProcess").val().replace(/ /g, "_") +
-                    config.wps.datainputs.split("/")[5] + $("input[name='deltaT']:checked").val() +
-                    config.wps.datainputs.split("/")[6] + inBasin +
-                    "&storeExecuteResponse=" + config.wps.storeExecuteResponse +
-                    "&lineage=" + config.wps.lineage +
-                    "&status=" + config.wps.status;
-
-                xhr.open("GET", ajaxURL(rqtWPS.replace(/\s+/g, '')), true);
-                xhr.addEventListener('readystatechange', function () {
-                    if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
-                        // Recupere le xml de la requete
-                        var xmlDoc = xhr.responseXML;
-                        // Se connecte au tableau de bord
-                        var tableRef = document.getElementById('panelWPS').getElementsByTagName('tbody')[0];
-                        // Insert a row in the table at the last row
-                        var newRow = tableRef.insertRow(tableRef.rows.length);
-                        // Insert a cell in the row at index 0
-                        var linkCell = newRow.insertCell(0);
-                        var statusCell = newRow.insertCell(1);
-                        var downloadCell = newRow.insertCell(2);
-                        // Ajoute l'url du resultat dans cette cellule
-                        var links = resultLink(xmlDoc, $("#nameProcess").val());
-                        // defini l'id unique de la requete selon l'url du resultat
-                        linkCell.id = links.link;
-                        document.getElementById(links.link).appendChild(links.link);
-                        // Recupere le status du process
-                        var etatStatus = getStatus(xmlDoc, statusCell, downloadCell);
-                        // Controle l'evolution du process et l'arrete au besoin
-                        var statusUpdate = setInterval(function () {
-                            updateStatus(links.url, statusCell, statusUpdate, $("#nameProcess").val(), downloadCell);
-                        }, config.wps.refreshTime);
-                    }
-                });
-                xhr.send();
+                if ($(this.submitButton).attr("value") == 'getstation') {
+                    getStations(xhr);
+                } else if ($(this.submitButton).attr("value") == 'transfr') {
+                    transfr(xhr);
+                }
             },
             messages: {
                 dateStart: {
@@ -1555,7 +1731,6 @@ var SViewer = function () {
             }
         });
     }
-
 
     /**
      * method: feedbackForm
