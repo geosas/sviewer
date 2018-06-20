@@ -1605,24 +1605,47 @@ var SViewer = function () {
         xhrResult.send();
     }
 
-    function getStations(xhr) {
-        rqtWPS = config.wps.url_wps +
-            "service=" + config.wps.service +
-            "&version=" + config.wps.version +
-            "&request=" + config.wps.request +
-            "&identifier=" + config.wps.idGetStation +
-            "&datainputs=" +
-            config.wps.datainputs.split("/")[0] + coord.split(',')[0] +
-            config.wps.datainputs.split("/")[1] + coord.split(',')[1] +
-            config.wps.datainputs.split("/")[2] + $("#dateStart").val() +
-            config.wps.datainputs.split("/")[3] + $("#dateEnd").val() +
-            config.wps.datainputs.split("/")[4] + $("#nameProcess").val().replace(/ /g, "_") +
-            config.wps.datainputs.split("/")[6] + inBasin +
-            "&storeExecuteResponse=" + config.wps.storeExecuteResponse +
-            "&lineage=" + config.wps.lineage +
-            "&status=" + config.wps.status;
+    function buildXmlRequest(service, version, request, identifier, inputs, SER, lineage, status) {
+        var xmlRequest = sprintf('<?xml version="1.0" encoding="UTF-8"?>\
+            <wps:%s xmlns:ows="http://www.opengis.net/ows/1.1" xmlns:wps="http://www.opengis.net/wps/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="%s" service="%s" xsi:schemaLocation="http://www.opengis.net/wps/1.0.0 http://schemas.opengis.net/wps/1.0.0/wpsAll.xsd">\
+            <ows:Identifier>%s</ows:Identifier>\
+            <wps:DataInputs>\
+            ', request, version, service, identifier);
 
-        xhr.open("GET", ajaxURL(rqtWPS.replace(/\s+/g, '')), true);
+        for (key in inputs) {
+            inputXml = sprintf('\
+            <wps:Input>\
+            <ows:Identifier>%s</ows:Identifier>\
+            <wps:Data>\
+            <wps:LiteralData>%s</wps:LiteralData>\
+            </wps:Data>\
+            </wps:Input>', key, inputs[key]);
+            xmlRequest += inputXml;
+        }
+        
+        xmlRequest += sprintf('\
+              </wps:DataInputs>\
+               <wps:ResponseForm>\
+                <wps:ResponseDocument storeExecuteResponse="%s" lineage="%s" status="%s">\
+                </wps:ResponseDocument>\
+               </wps:ResponseForm>\
+              </wps:%s>', SER, lineage, status, request);
+        
+        return xmlRequest;
+    }
+    
+    function getStations(xhr) {
+        datas = {[config.wps.datainputs.split("/")[0]]: [coord.split(',')[0]],
+            [config.wps.datainputs.split("/")[1]]: [coord.split(',')[1]],
+            [config.wps.datainputs.split("/")[2]]: [$("#dateStart").val()],
+            [config.wps.datainputs.split("/")[3]]: [$("#dateEnd").val()],
+            [config.wps.datainputs.split("/")[4]]: [$("#nameProcess").val().replace(/ /g, "_")],
+            [config.wps.datainputs.split("/")[6]]: [inBasin]};
+        
+        rqtWPS = buildXmlRequest(config.wps.service, config.wps.version, config.wps.request, config.wps.idGetStation,
+                                 datas, config.wps.storeExecuteResponse, config.wps.lineage, config.wps.status);
+
+        xhr.open("POST", ajaxURL(config.wps.url_wps), true);
         xhr.addEventListener('readystatechange', function () {
             if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
                 // Recupere le xml de la requete
@@ -1636,28 +1659,22 @@ var SViewer = function () {
                 }, config.wps.refreshTime);
             }
         });
-        xhr.send();
+        xhr.send(rqtWPS);
     }
-    
-    function transfr(xhr){
-        rqtWPS = config.wps.url_wps +
-            "service=" + config.wps.service +
-            "&version=" + config.wps.version +
-            "&request=" + config.wps.request +
-            "&identifier=" + config.wps.idModel +
-            "&datainputs=" +
-            config.wps.datainputs.split("/")[0] + coord.split(',')[0] +
-            config.wps.datainputs.split("/")[1] + coord.split(',')[1] +
-            config.wps.datainputs.split("/")[2] + $("#dateStart").val() +
-            config.wps.datainputs.split("/")[3] + $("#dateEnd").val() +
-            config.wps.datainputs.split("/")[4] + $("#nameProcess").val().replace(/ /g, "_") +
-            config.wps.datainputs.split("/")[5] + $("input[name='deltaT']:checked").val() +
-            config.wps.datainputs.split("/")[6] + inBasin +
-            "&storeExecuteResponse=" + config.wps.storeExecuteResponse +
-            "&lineage=" + config.wps.lineage +
-            "&status=" + config.wps.status;
 
-        xhr.open("GET", ajaxURL(rqtWPS.replace(/\s+/g, '')), true);
+    function transfr(xhr) {  
+        datas = {[config.wps.datainputs.split("/")[0]]: [coord.split(',')[0]],
+            [config.wps.datainputs.split("/")[1]]: [coord.split(',')[1]],
+            [config.wps.datainputs.split("/")[2]]: [$("#dateStart").val()],
+            [config.wps.datainputs.split("/")[3]]: [$("#dateEnd").val()],
+            [config.wps.datainputs.split("/")[4]]: [$("#nameProcess").val().replace(/ /g, "_")],
+            [config.wps.datainputs.split("/")[5]]: [$("input[name='deltaT']:checked").val()],
+            [config.wps.datainputs.split("/")[6]]: [inBasin]};
+        
+        rqtWPS = buildXmlRequest(config.wps.service, config.wps.version, config.wps.request, config.wps.idModel,
+                                 datas, config.wps.storeExecuteResponse, config.wps.lineage, config.wps.status);
+        
+        xhr.open("POST", ajaxURL(config.wps.url_wps), true);
         xhr.addEventListener('readystatechange', function () {
             if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
                 // Recupere le xml de la requete
@@ -1678,9 +1695,9 @@ var SViewer = function () {
                 }, config.wps.refreshTime);
             }
         });
-        xhr.send();
+        xhr.send(rqtWPS);
     }
-    
+
     function wpsExe() {
         // permet de controler les donnees dans le formulaire
         $('#wpsForm').validate({
