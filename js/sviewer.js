@@ -1224,7 +1224,7 @@ var SViewer = function () {
         return returnedObject;
     }
 
-    function setStatus(tagStatus, statusCell, downloadCell) {
+    function setProgress(tagStatus, statusCell, downloadCell) {
         // Recupere le status de la requete wps et mets a jour
         // celle ci dans le tableau de bord si necessaire
         var status = tagStatus[0].childNodes[1];
@@ -1255,62 +1255,35 @@ var SViewer = function () {
         }
     }
 
-    function updateStatus(url, statusCell, statusUpdate, nameProcess, downloadCell) {
-        // Met a jour le statut en repetant cette requete
-        // autant de fois que necessaire pour sortir de l'etat process succeeded
-        var xhrStatus = getXDomainRequest();
-        // se connecte au fichier xml contenant le resultat du process et qui est mis a jour
-        // au fur et a mesure du traitement
-        xhrStatus.open("GET", ajaxURL(url), true);
-        xhrStatus.addEventListener('readystatechange', function () {
-            if (xhrStatus.readyState === XMLHttpRequest.DONE && xhrStatus.status === 200) {
-                // recupere la reponse de l'url
-                var xmlStatus = xhrStatus.responseXML;
-                // recupere et met a jour le status du traitement
-                var tagStatus = xmlStatus.getElementsByTagName('wps:Status');
-                var etatStatus = setStatus(tagStatus, statusCell, downloadCell);
-                if (etatStatus !== 'Process Accepted') {
-                    // arrete l'ecoute du status puisque le process est termine
-                    clearInterval(statusUpdate);
-                    if (etatStatus === 'Process Succeeded') {
-                        // cree un graphique d'apres le resultat et mets en place un lien de telechargement
-                        plotDlDatas(xmlStatus, nameProcess, downloadCell);
-                        // Affiche les stations employees
-                        plotStation(xmlStatus);
-                    }
-                }
-            }
-        });
-        xhrStatus.send();
-    }
+
 
     /*function setDownloadFile2(datas, nameProcess, downloadCell) {
-        // formate la variable contenant les donnees au format json
-        var jsonse = JSON.stringify(datas, null, "\t");
-        var jsonseToCSV = ConvertToCSV(jsonse);
-        var blob = new Blob([jsonseToCSV], {
-            type: "text/csv"
-        });
-        var url = URL.createObjectURL(blob);
-        // cree l'url de telechargement et lie le fichier blob a celui-ci
-        // et l'joute dans le tableau de bord
-        var dlJson = document.createElement("a");
-        dlJson.setAttribute("href", url);
-        dlJson.setAttribute("target", "_blank");
-        dlJson.setAttribute("download", nameProcess + "_flow.csv");
-        dlJson.appendChild(document.createTextNode("download"));
-        downloadCell.id = nameProcess + "_dl";
-        // test pour ne pas ajouter plusieurs lien de telechargement dans la meme
-        // cellule si une requete est trop longue a s'executer
-        var element = document.getElementById(nameProcess + "_dl")
-        while (element.firstChild) {
-            element.removeChild(element.firstChild);
+            // formate la variable contenant les donnees au format json
+            var jsonse = JSON.stringify(datas, null, "\t");
+            var jsonseToCSV = ConvertToCSV(jsonse);
+            var blob = new Blob([jsonseToCSV], {
+                type: "text/csv"
+            });
+            var url = URL.createObjectURL(blob);
+            // cree l'url de telechargement et lie le fichier blob a celui-ci
+            // et l'joute dans le tableau de bord
+            var dlJson = document.createElement("a");
+            dlJson.setAttribute("href", url);
+            dlJson.setAttribute("target", "_blank");
+            dlJson.setAttribute("download", nameProcess + "_flow.csv");
+            dlJson.appendChild(document.createTextNode("download"));
+            downloadCell.id = nameProcess + "_dl";
+            // test pour ne pas ajouter plusieurs lien de telechargement dans la meme
+            // cellule si une requete est trop longue a s'executer
+            var element = document.getElementById(nameProcess + "_dl")
+            while (element.firstChild) {
+                element.removeChild(element.firstChild);
+            }
+            if (element.childNodes.length === 0) {
+                element.appendChild(dlJson);
+            }
         }
-        if (element.childNodes.length === 0) {
-            element.appendChild(dlJson);
-        }
-    }
-*/
+    */
     function setDownloadFile(datasx, datasy, nameProcess, downloadCell) {
         // header of csvfile
         var str = 'date;runoff' + '\r\n';
@@ -1361,7 +1334,7 @@ var SViewer = function () {
         return xmlDoc;
     }
 
-    function plotStation(xmlResponse) {
+    function plotStation(xmlResponse, downloadCell, nameProcess) {
         /*recupere dans le document xml les informations spatiales des stations
         pour ensuite les afficher sur la carte. Si une couche de station a deja ete
         produite, la supprime avant*/
@@ -1454,6 +1427,13 @@ var SViewer = function () {
             } catch (error) {
                 continue;
             }
+        }
+        downloadCell.id = nameProcess + "_dl";
+        // test pour ne pas ajouter plusieurs lien de telechargement dans la meme
+        // cellule si une requete est trop longue a s'executer
+        var element = document.getElementById(nameProcess + "_dl")
+        while (element.firstChild) {
+            element.removeChild(element.firstChild);
         }
     }
 
@@ -1577,7 +1557,7 @@ var SViewer = function () {
         return [linkCell, statusCell, downloadCell];
     }
 
-    function updateStations(updating, url) {
+    function updateProcess(updating, url, statusCell, downloadCell, nameProcess, idProcess) {
         // Met a jour le statut en repetant cette requete
         // autant de fois que necessaire pour sortir de l'etat process succeeded
         var xhrResult = getXDomainRequest();
@@ -1590,19 +1570,50 @@ var SViewer = function () {
                 var xmlResult = xhrResult.responseXML;
                 // recupere et met a jour le status du traitement
                 var tagStatus = xmlResult.getElementsByTagName('wps:Status');
+                var etatStatus = setProgress(tagStatus, statusCell, downloadCell);
                 var status = tagStatus[0].childNodes[1].nodeName;
-
                 if (status !== 'wps:ProcessAccepted' && status !== 'wps:ProcessStarted') {
                     // arrete l'ecoute du status puisque le process est termine
                     clearInterval(updating);
                     if (status === 'wps:ProcessSucceeded') {
-                        // Affiche les stations employees
-                        plotStation(xmlResult);
+                        if (idProcess == config.wps.idModel) {
+                            // Affiche les stations employees
+                            plotStation(xmlResult, downloadCell, nameProcess);
+                            // cree un graphique d'apres le resultat et mets en place un lien de telechargement
+                            plotDlDatas(xmlResult, nameProcess, downloadCell);
+                        } else if (idProcess == config.wps.idGetStation) {
+                            // Affiche les stations employees
+                            plotStation(xmlResult, downloadCell, nameProcess);
+                        }
                     }
                 }
             }
         });
         xhrResult.send();
+    }
+
+    function processExe(xhr, rqtWPS, idProcess) {
+        xhr.open("POST", ajaxURL(config.wps.url_wps), true);
+        xhr.addEventListener('readystatechange', function () {
+            if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+                // Recupere le xml de la requete
+                var xmlDoc = xhr.responseXML;
+                // Se connecte au tableau de bord
+                var cells = dashboard();
+                // Ajoute l'url du resultat dans cette cellule
+                var links = resultLink(xmlDoc, $("#nameProcess").val());
+                // defini l'id unique de la requete selon l'url du resultat
+                cells[0].id = links.link;
+                document.getElementById(links.link).appendChild(links.link);
+                // Recupere le status du process
+                var tagStatus = xmlDoc.getElementsByTagName('wps:Status');
+                var etatStatus = setProgress(tagStatus, cells[1], cells[2]);
+                var updating = setInterval(function () {
+                    updateProcess(updating, links.url, cells[1], cells[2], $("#nameProcess").val(), idProcess);
+                }, config.wps.refreshTime);
+            }
+        });
+        xhr.send(rqtWPS);
     }
 
     function buildXmlRequest(service, version, request, identifier, inputs, SER, lineage, status) {
@@ -1622,7 +1633,7 @@ var SViewer = function () {
             </wps:Input>', key, inputs[key]);
             xmlRequest += inputXml;
         }
-        
+
         xmlRequest += sprintf('\
               </wps:DataInputs>\
                <wps:ResponseForm>\
@@ -1630,72 +1641,8 @@ var SViewer = function () {
                 </wps:ResponseDocument>\
                </wps:ResponseForm>\
               </wps:%s>', SER, lineage, status, request);
-        
+
         return xmlRequest;
-    }
-    
-    function getStations(xhr) {
-        datas = {[config.wps.datainputs.split("/")[0]]: [coord.split(',')[0]],
-            [config.wps.datainputs.split("/")[1]]: [coord.split(',')[1]],
-            [config.wps.datainputs.split("/")[2]]: [$("#dateStart").val()],
-            [config.wps.datainputs.split("/")[3]]: [$("#dateEnd").val()],
-            [config.wps.datainputs.split("/")[4]]: [$("#nameProcess").val().replace(/ /g, "_")],
-            [config.wps.datainputs.split("/")[6]]: [inBasin]};
-        
-        rqtWPS = buildXmlRequest(config.wps.service, config.wps.version, config.wps.request, config.wps.idGetStation,
-                                 datas, config.wps.storeExecuteResponse, config.wps.lineage, config.wps.status);
-
-        xhr.open("POST", ajaxURL(config.wps.url_wps), true);
-        xhr.addEventListener('readystatechange', function () {
-            if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
-                // Recupere le xml de la requete
-                var xmlDoc = xhr.responseXML;
-                // Recupere le status du process
-                var tagStatus = xmlDoc.getElementsByTagName('wps:Status');
-                var links = resultLink(xmlDoc, $("#nameProcess").val());
-                // Controle l'evolution du process et l'arrete au besoin
-                var updating = setInterval(function () {
-                    updateStations(updating, links.url);
-                }, config.wps.refreshTime);
-            }
-        });
-        xhr.send(rqtWPS);
-    }
-
-    function transfr(xhr) {  
-        datas = {[config.wps.datainputs.split("/")[0]]: [coord.split(',')[0]],
-            [config.wps.datainputs.split("/")[1]]: [coord.split(',')[1]],
-            [config.wps.datainputs.split("/")[2]]: [$("#dateStart").val()],
-            [config.wps.datainputs.split("/")[3]]: [$("#dateEnd").val()],
-            [config.wps.datainputs.split("/")[4]]: [$("#nameProcess").val().replace(/ /g, "_")],
-            [config.wps.datainputs.split("/")[5]]: [$("input[name='deltaT']:checked").val()],
-            [config.wps.datainputs.split("/")[6]]: [inBasin]};
-        
-        rqtWPS = buildXmlRequest(config.wps.service, config.wps.version, config.wps.request, config.wps.idModel,
-                                 datas, config.wps.storeExecuteResponse, config.wps.lineage, config.wps.status);
-        
-        xhr.open("POST", ajaxURL(config.wps.url_wps), true);
-        xhr.addEventListener('readystatechange', function () {
-            if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
-                // Recupere le xml de la requete
-                var xmlDoc = xhr.responseXML;
-                // Se connecte au tableau de bord
-                var cells = dashboard()
-                // Ajoute l'url du resultat dans cette cellule
-                var links = resultLink(xmlDoc, $("#nameProcess").val());
-                // defini l'id unique de la requete selon l'url du resultat
-                cells[0].id = links.link;
-                document.getElementById(links.link).appendChild(links.link);
-                // Recupere le status du process
-                var tagStatus = xmlDoc.getElementsByTagName('wps:Status');
-                var etatStatus = setStatus(tagStatus, cells[1], cells[2]);
-                // Controle l'evolution du process et l'arrete au besoin
-                var statusUpdate = setInterval(function () {
-                    updateStatus(links.url, cells[1], statusUpdate, $("#nameProcess").val(), cells[2]);
-                }, config.wps.refreshTime);
-            }
-        });
-        xhr.send(rqtWPS);
     }
 
     function wpsExe() {
@@ -1730,12 +1677,37 @@ var SViewer = function () {
                 } else {
                     inBasin = "False";
                 }
+                var idProcess = $(this.submitButton).attr("value");
+                if (idProcess == config.wps.idGetStation) {
+                    datas = {
+                        [config.wps.datainputs.split("/")[0]]: [coord.split(',')[0]],
+                        [config.wps.datainputs.split("/")[1]]: [coord.split(',')[1]],
+                        [config.wps.datainputs.split("/")[2]]: [$("#dateStart").val()],
+                        [config.wps.datainputs.split("/")[3]]: [$("#dateEnd").val()],
+                        [config.wps.datainputs.split("/")[4]]: [$("#nameProcess").val().replace(/ /g, "_")],
+                        [config.wps.datainputs.split("/")[6]]: [inBasin]
+                    };
 
-                if ($(this.submitButton).attr("value") == 'getstation') {
-                    getStations(xhr);
-                } else if ($(this.submitButton).attr("value") == 'transfr') {
-                    transfr(xhr);
+                    var rqtWPS = buildXmlRequest(config.wps.service, config.wps.version, config.wps.request, config.wps.idGetStation,
+                        datas, config.wps.storeExecuteResponse, config.wps.lineage, config.wps.status);
+
+                } else if (idProcess == config.wps.idModel) {
+                    datas = {
+                        [config.wps.datainputs.split("/")[0]]: [coord.split(',')[0]],
+                        [config.wps.datainputs.split("/")[1]]: [coord.split(',')[1]],
+                        [config.wps.datainputs.split("/")[2]]: [$("#dateStart").val()],
+                        [config.wps.datainputs.split("/")[3]]: [$("#dateEnd").val()],
+                        [config.wps.datainputs.split("/")[4]]: [$("#nameProcess").val().replace(/ /g, "_")],
+                        [config.wps.datainputs.split("/")[5]]: [$("input[name='deltaT']:checked").val()],
+                        [config.wps.datainputs.split("/")[6]]: [inBasin]
+                    };
+
+                    var rqtWPS = buildXmlRequest(config.wps.service, config.wps.version, config.wps.request, config.wps.idModel,
+                        datas, config.wps.storeExecuteResponse, config.wps.lineage, config.wps.status);
                 }
+
+                processExe(xhr, rqtWPS, idProcess);
+
             },
             messages: {
                 dateStart: {

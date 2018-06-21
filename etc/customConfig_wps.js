@@ -196,12 +196,12 @@ customConfig = {
         idGetStation: "getStations",
         idModel: "transfr",
         //datainputs: "X=/;Y=/;Start=/;End=/;Name=/;DeltaT=/;InBasin=",
-	datainputs: "X/Y/Start/End/Name/DeltaT/InBasin",
+	    datainputs: "X/Y/Start/End/Name/DeltaT/InBasin",
         storeExecuteResponse: true,
         lineage: true,
         status: true,
         describeWPS: 'http://wps.geosas.fr/simfen?service=WPS&version=1.0.0&request=describeProcess&identifier=transfr',
-        refreshTime: 5000
+        refreshTime: 3000
     },
 
     /**
