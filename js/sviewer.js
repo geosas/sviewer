@@ -1339,7 +1339,23 @@ var SViewer = function () {
         pour ensuite les afficher sur la carte. Si une couche de station a deja ete
         produite, la supprime avant*/
 
-        function pointStyleFunction(feature) {
+        function pointStyleFunctionSelected(feature) {
+            return new ol.style.Style({
+                image: new ol.style.Circle({
+                    fill: new ol.style.Fill({
+                        color: 'rgba(0, 200, 0, 1)'
+                    }),
+                    stroke: new ol.style.Stroke({
+                        width: 1,
+                        color: 'rgba(0, 200, 0, 1)'
+                    }),
+                    radius: 7
+                }),
+                text: createTextStyle(feature)
+            });
+        }
+
+        function pointStyleFunctionUnselected(feature) {
             return new ol.style.Style({
                 image: new ol.style.Circle({
                     fill: new ol.style.Fill({
@@ -1372,39 +1388,48 @@ var SViewer = function () {
 
         // identifie la balise de sortie
         var docProcessOutputs = xmlResponse.getElementsByTagName("wps:ProcessOutputs");
+        // supprime la precedente couche de station si elle existe
+        var layersToRemove = [];
+        map.getLayers().forEach(function (layer) {
+            if (layer.get('name') != undefined && (layer.get('name') === 'stations' || layer.get('name') === 'stations2')) {
+                layersToRemove.push(layer);
+            }
+        });
+        var len = layersToRemove.length;
+        for (var i = 0; i < len; i++) {
+            map.removeLayer(layersToRemove[i]);
+        }
+
         // recupere au format texte la partie du xml correspondant au resultat contenant les stations
         for (var i = 0; i < docProcessOutputs[0].childNodes.length; i++) {
             try {
+                var outputName = docProcessOutputs[0].childNodes[i].children[0].textContent
+                
                 // Controle que nous sommes bien dans la balide correspondant au debit
-                if (docProcessOutputs[0].childNodes[i].children[0].textContent === 'Stations') {
+                if (outputName === 'Stations' || outputName === 'Stations2') {
                     var gmlStations = docProcessOutputs[0].childNodes[i].children[2].outerHTML;
                     // converti la chaine de texte en objet xml
                     var gmlStationsXML = StringToXMLDom(gmlStations);
                     // pour chaque entite (station)
                     var features = gmlStationsXML.getElementsByTagName("gml:featureMember");
 
-                    // supprime la precedente couche de station si elle existe
-                    var layersToRemove = [];
-                    map.getLayers().forEach(function (layer) {
-                        if (layer.get('name') != undefined && layer.get('name') === 'stations') {
-                            layersToRemove.push(layer);
-                        }
-                    });
-
-                    var len = layersToRemove.length;
-                    for (var i = 0; i < len; i++) {
-                        map.removeLayer(layersToRemove[i]);
-                    }
-
                     // initialise la source de donnees qui va contenir les entites
                     var stationSource = new ol.source.Vector({});
 
                     // cree le vecteur qui va contenir les stations
-                    var stationLayer = new ol.layer.Vector({
-                        name: "stations",
-                        source: stationSource,
-                        style: pointStyleFunction
-                    });
+                    if (outputName === 'Stations') {
+                        var stationLayer = new ol.layer.Vector({
+                            name: "stations",
+                            source: stationSource,
+                            style: pointStyleFunctionSelected
+                        });
+                    } else if (outputName === 'Stations2') {
+                        var stationLayer = new ol.layer.Vector({
+                            name: "stations2",
+                            source: stationSource,
+                            style: pointStyleFunctionUnselected
+                        });
+                    }
 
                     // pour chaque entite
                     for (var i = 0; i < features.length; i++) {
@@ -1427,6 +1452,7 @@ var SViewer = function () {
             } catch (error) {
                 continue;
             }
+
         }
         downloadCell.id = nameProcess + "_dl";
         // test pour ne pas ajouter plusieurs lien de telechargement dans la meme
