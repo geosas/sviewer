@@ -1255,8 +1255,6 @@ var SViewer = function () {
         }
     }
 
-
-
     /*function setDownloadFile2(datas, nameProcess, downloadCell) {
             // formate la variable contenant les donnees au format json
             var jsonse = JSON.stringify(datas, null, "\t");
@@ -1284,6 +1282,7 @@ var SViewer = function () {
             }
         }
     */
+    
     function setDownloadFile(datasx, datasy, nameProcess, downloadCell) {
         // header of csvfile
         var str = 'date;runoff' + '\r\n';
@@ -1399,7 +1398,7 @@ var SViewer = function () {
         for (var i = 0; i < len; i++) {
             map.removeLayer(layersToRemove[i]);
         }
-
+        
         // recupere au format texte la partie du xml correspondant au resultat contenant les stations
         for (var i = 0; i < docProcessOutputs[0].childNodes.length; i++) {
             try {
@@ -1412,18 +1411,20 @@ var SViewer = function () {
                     var gmlStationsXML = StringToXMLDom(gmlStations);
                     // pour chaque entite (station)
                     var features = gmlStationsXML.getElementsByTagName("gml:featureMember");
-
+                    
                     // initialise la source de donnees qui va contenir les entites
                     var stationSource = new ol.source.Vector({});
-
+                    
                     // cree le vecteur qui va contenir les stations
                     if (outputName === 'Stations') {
+                        //alert("stations");
                         var stationLayer = new ol.layer.Vector({
                             name: "stations",
                             source: stationSource,
                             style: pointStyleFunctionSelected
                         });
                     } else if (outputName === 'Stations2') {
+                        //alert("station2");
                         var stationLayer = new ol.layer.Vector({
                             name: "stations2",
                             source: stationSource,
@@ -1432,10 +1433,10 @@ var SViewer = function () {
                     }
 
                     // pour chaque entite
-                    for (var i = 0; i < features.length; i++) {
+                    for (var j = 0; j < features.length; j++) {
                         // recupere sa coordonnees et son nom
-                        coord = gmlStationsXML.getElementsByTagName("gml:coordinates")[i].textContent.split(",");
-                        nameStation = gmlStationsXML.getElementsByTagName("ogr:CDSTATIONH")[i].textContent;
+                        coord = gmlStationsXML.getElementsByTagName("gml:coordinates")[j].textContent.split(",");
+                        nameStation = gmlStationsXML.getElementsByTagName("ogr:CDSTATIONH")[j].textContent;
                         // cree le point en veillant a changer la projection
                         var featureGeom = new ol.geom.Point(ol.proj.transform([coord[0], coord[1]], 'EPSG:2154', 'EPSG:3857'));
                         // cree la feature
@@ -1452,7 +1453,6 @@ var SViewer = function () {
             } catch (error) {
                 continue;
             }
-
         }
         downloadCell.id = nameProcess + "_dl";
         // test pour ne pas ajouter plusieurs lien de telechargement dans la meme
