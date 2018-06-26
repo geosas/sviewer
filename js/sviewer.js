@@ -1318,7 +1318,27 @@ var SViewer = function () {
         }
     }
 
-
+    function setInputStations(listStations, nameProcess, downloadCell) {
+        // cree l'url de telechargement et lie le fichier blob a celui-ci
+        // et l'joute dans le tableau de bord
+        var inputStation = document.createElement("INPUT");
+        inputStation.setAttribute("type", "text");
+        inputStation.setAttribute("value", listStations);
+        inputStation.setAttribute("size", 5);
+        inputStation.setAttribute("id", nameProcess + "_inputStation");
+        inputStation.appendChild(document.createTextNode("listStations"));
+        downloadCell.id = nameProcess + "_Stations";
+        // test pour ne pas ajouter plusieurs lien de telechargement dans la meme
+        // cellule si une requete est trop longue a s'executer
+        var element = document.getElementById(nameProcess + "_Stations")
+        while (element.firstChild) {
+            element.removeChild(element.firstChild);
+        }
+        if (element.childNodes.length === 0) {
+            element.appendChild(inputStation);
+        }
+    }
+    
     function StringToXMLDom(string) {
         var xmlDoc = null;
         if (window.DOMParser) {
@@ -1417,7 +1437,7 @@ var SViewer = function () {
                     
                     // cree le vecteur qui va contenir les stations
                     if (outputName === 'Stations') {
-                        //alert("stations");
+                        var arrStations = new Array();
                         var stationLayer = new ol.layer.Vector({
                             name: "stations",
                             source: stationSource,
@@ -1437,6 +1457,11 @@ var SViewer = function () {
                         // recupere sa coordonnees et son nom
                         coord = gmlStationsXML.getElementsByTagName("gml:coordinates")[j].textContent.split(",");
                         nameStation = gmlStationsXML.getElementsByTagName("ogr:CDSTATIONH")[j].textContent;
+                        
+                        if (outputName === 'Stations') {
+                            arrStations.push(nameStation);
+                        }
+                        
                         // cree le point en veillant a changer la projection
                         var featureGeom = new ol.geom.Point(ol.proj.transform([coord[0], coord[1]], 'EPSG:2154', 'EPSG:3857'));
                         // cree la feature
@@ -1449,17 +1474,11 @@ var SViewer = function () {
                     }
                     // ajoute la couche de point des stations a la carte
                     map.addLayer(stationLayer);
+                    setInputStations(arrStations, nameProcess, downloadCell);
                 }
             } catch (error) {
                 continue;
             }
-        }
-        downloadCell.id = nameProcess + "_dl";
-        // test pour ne pas ajouter plusieurs lien de telechargement dans la meme
-        // cellule si une requete est trop longue a s'executer
-        var element = document.getElementById(nameProcess + "_dl")
-        while (element.firstChild) {
-            element.removeChild(element.firstChild);
         }
     }
 
@@ -1602,7 +1621,7 @@ var SViewer = function () {
                     // arrete l'ecoute du status puisque le process est termine
                     clearInterval(updating);
                     if (status === 'wps:ProcessSucceeded') {
-                        if (idProcess == config.wps.idModel) {
+                        if (idProcess == config.wps.idModel || idProcess == config.wps.idGetTransfr) {
                             // Affiche les stations employees
                             plotStation(xmlResult, downloadCell, nameProcess);
                             // cree un graphique d'apres le resultat et mets en place un lien de telechargement
@@ -1729,6 +1748,20 @@ var SViewer = function () {
                     };
 
                     var rqtWPS = buildXmlRequest(config.wps.service, config.wps.version, config.wps.request, config.wps.idModel,
+                        datas, config.wps.storeExecuteResponse, config.wps.lineage, config.wps.status);
+                    
+                } else if (idProcess == config.wps.idGetTransfr) {
+                    datas = {
+                        [config.wps.datainputs.split("/")[0]]: [coord.split(',')[0]],
+                        [config.wps.datainputs.split("/")[1]]: [coord.split(',')[1]],
+                        [config.wps.datainputs.split("/")[2]]: [$("#dateStart").val()],
+                        [config.wps.datainputs.split("/")[3]]: [$("#dateEnd").val()],
+                        [config.wps.datainputs.split("/")[4]]: [$("#nameProcess").val().replace(/ /g, "_")],
+                        [config.wps.datainputs.split("/")[5]]: [$("input[name='deltaT']:checked").val()],
+                        [config.wps.datainputs.split("/")[7]]: [document.getElementById($("#nameProcess").val().replace(/ /g, "_")+"_inputStation").value]
+                    };
+                    
+                    var rqtWPS = buildXmlRequest(config.wps.service, config.wps.version, config.wps.request, config.wps.idGetTransfr,
                         datas, config.wps.storeExecuteResponse, config.wps.lineage, config.wps.status);
                 }
 
