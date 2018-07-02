@@ -189,19 +189,19 @@ customConfig = {
      */
     wps: {
         url: "http://wps.geosas.fr",
-        url_wps: "http://wps.geosas.fr/simfen?",
+        url_wps: "http://wps.geosas.fr/simfen-dev?",
         service: "WPS",
         version: "1.0.0",
         request: "Execute",
         idGetStation: "getStations",
         idGetTransfr: "getTransfr",
         idModel: "transfr",
-        //datainputs: "X=/;Y=/;Start=/;End=/;Name=/;DeltaT=/;InBasin=",
+        idXyOnNetwork: "xyOnNetwork",
 	    datainputs: "X/Y/Start/End/Name/DeltaT/InBasin/ListStations",
         storeExecuteResponse: true,
         lineage: true,
         status: true,
-        describeWPS: 'http://wps.geosas.fr/simfen?service=WPS&version=1.0.0&request=describeProcess&identifier=transfr',
+        describeWPS: 'http://wps.geosas.fr/simfen-dev?service=WPS&version=1.0.0&request=describeProcess&identifier=transfr',
         refreshTime: 3000
     },
 
