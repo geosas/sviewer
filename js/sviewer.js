@@ -1205,6 +1205,93 @@ var SViewer = function () {
         return xhr;
     }
 
+    function updateXY(updating, url) {
+        // Met a jour le statut en repetant cette requete
+        // autant de fois que necessaire pour sortir de l'etat process succeeded
+        var xhrResult = getXDomainRequest();
+        // se connecte au fichier xml contenant le resultat du process et qui est mis a jour
+        // au fur et a mesure du traitement
+        xhrResult.open("GET", ajaxURL(url), true);
+        xhrResult.addEventListener('readystatechange', function () {
+            if (xhrResult.readyState === XMLHttpRequest.DONE && xhrResult.status === 200) {
+                // recupere la reponse de l'url
+                var xmlResult = xhrResult.responseXML;
+                // recupere et met a jour le status du traitement
+                var tagStatus = xmlResult.getElementsByTagName('wps:Status');
+                var status = tagStatus[0].childNodes[1].nodeName;
+                if (status !== 'wps:ProcessAccepted' && status !== 'wps:ProcessStarted') {
+                    // arrete l'ecoute du status puisque le process est termine
+                    clearInterval(updating);
+                    if (status === 'wps:ProcessSucceeded') {
+                        // identifie la balise de sortie
+                        var docProcessOutputs = xmlResult.getElementsByTagName("wps:ProcessOutputs");
+                        // recupere au format texte la partie du xml correspondant au resultat contenant les stations
+                        for (var i = 0; i < docProcessOutputs[0].childNodes.length; i++) {
+                            try {
+                                var outputName = docProcessOutputs[0].childNodes[i].children[0].textContent
+                                // Controle que nous sommes bien dans la balide correspondant au debit
+                                if (outputName === 'XY') {
+                                    var XYOnNetwork = docProcessOutputs[0].childNodes[i].children[2].children[0].textContent.split(" ");
+                                    var p = ol.proj.transform(XYOnNetwork, 'EPSG:2154', 'EPSG:3857'),
+                                        start = +new Date(),
+                                        pan = ol.animation.pan({
+                                            duration: 1000,
+                                            source: view.getCenter(),
+                                            start: start
+                                        }),
+                                        zoom = ol.animation.zoom({
+                                            duration: 1000,
+                                            source: view.getCenter(),
+                                            resolution: view.getResolution(),
+                                            start: start
+                                        });
+                                    marker.setPosition(p);
+                                    map.beforeRender(pan, zoom);
+                                    view.setCenter(p);
+                                    $('#marker').show();
+
+                                }
+                            } catch (error) {
+                                continue;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        xhrResult.send();
+    }
+
+
+    function xyOnNetwork() {
+        // recupere la coordonnee
+        coord = positionToL93(marker.getPosition());
+        var xhr = getXDomainRequest();
+        // defini les parametres x,y du service
+        datas = {
+            [config.wps.datainputs.split("/")[0]]: [coord.split(',')[0]],
+            [config.wps.datainputs.split("/")[1]]: [coord.split(',')[1]]
+        };
+
+        // construit la requete wps
+        var rqtWPS = buildXmlRequest(config.wps.service, config.wps.version, config.wps.request, config.wps.idXyOnNetwork,
+            datas, config.wps.storeExecuteResponse, config.wps.lineage, config.wps.status);
+
+        xhr.open("POST", ajaxURL(config.wps.url_wps), true);
+        xhr.addEventListener('readystatechange', function () {
+            if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+                // Recupere le xml de la requete
+                var xmlDoc = xhr.responseXML;
+                var links = resultLink(xmlDoc, "xyOnStream");
+                var updating = setInterval(function () {
+                    updateXY(updating, links.url);
+                }, config.wps.refreshTimeXY);
+            }
+        });
+        xhr.send(rqtWPS);
+
+    }
+
     function resultLink(xmlDoc, nameProcess) {
         // Recupere le tag et l'attribut contenant la page xml de resultat et cree un lien pour y acceder
         var tagExecute = xmlDoc.getElementsByTagName('wps:ExecuteResponse')[0];
@@ -1282,7 +1369,7 @@ var SViewer = function () {
             }
         }
     */
-    
+
     function setDownloadFile(datasx, datasy, nameProcess, downloadCell) {
         // header of csvfile
         var str = 'date;runoff' + '\r\n';
@@ -1338,7 +1425,7 @@ var SViewer = function () {
             element.appendChild(inputStation);
         }
     }
-    
+
     function StringToXMLDom(string) {
         var xmlDoc = null;
         if (window.DOMParser) {
@@ -1418,12 +1505,12 @@ var SViewer = function () {
         for (var i = 0; i < len; i++) {
             map.removeLayer(layersToRemove[i]);
         }
-        
+
         // recupere au format texte la partie du xml correspondant au resultat contenant les stations
         for (var i = 0; i < docProcessOutputs[0].childNodes.length; i++) {
             try {
                 var outputName = docProcessOutputs[0].childNodes[i].children[0].textContent
-                
+
                 // Controle que nous sommes bien dans la balide correspondant au debit
                 if (outputName === 'Stations' || outputName === 'Stations2') {
                     var gmlStations = docProcessOutputs[0].childNodes[i].children[2].outerHTML;
@@ -1431,10 +1518,10 @@ var SViewer = function () {
                     var gmlStationsXML = StringToXMLDom(gmlStations);
                     // pour chaque entite (station)
                     var features = gmlStationsXML.getElementsByTagName("gml:featureMember");
-                    
+
                     // initialise la source de donnees qui va contenir les entites
                     var stationSource = new ol.source.Vector({});
-                    
+
                     // cree le vecteur qui va contenir les stations
                     if (outputName === 'Stations') {
                         var arrStations = new Array();
@@ -1456,12 +1543,12 @@ var SViewer = function () {
                     for (var j = 0; j < features.length; j++) {
                         // recupere sa coordonnees et son nom
                         coord = gmlStationsXML.getElementsByTagName("gml:coordinates")[j].textContent.split(",");
-                        nameStation = gmlStationsXML.getElementsByTagName("ogr:CDSTATIONH")[j].textContent;
-                        
+                        nameStation = gmlStationsXML.getElementsByTagName("ogr:code_hydro")[j].textContent;
+
                         if (outputName === 'Stations') {
                             arrStations.push(nameStation);
                         }
-                        
+
                         // cree le point en veillant a changer la projection
                         var featureGeom = new ol.geom.Point(ol.proj.transform([coord[0], coord[1]], 'EPSG:2154', 'EPSG:3857'));
                         // cree la feature
@@ -1621,12 +1708,12 @@ var SViewer = function () {
                     // arrete l'ecoute du status puisque le process est termine
                     clearInterval(updating);
                     if (status === 'wps:ProcessSucceeded') {
-                        if (idProcess == config.wps.idModel || idProcess == config.wps.idGetTransfr) {
+                        if (idProcess == config.wps.idCalcModel) {
                             // Affiche les stations employees
                             plotStation(xmlResult, downloadCell, nameProcess);
                             // cree un graphique d'apres le resultat et mets en place un lien de telechargement
                             plotDlDatas(xmlResult, nameProcess, downloadCell);
-                        } else if (idProcess == config.wps.idGetStation) {
+                        } else if (idProcess == config.wps.idGetStation || idProcess == config.wps.idCalcGhosh) {
                             // Affiche les stations employees
                             plotStation(xmlResult, downloadCell, nameProcess);
                         }
@@ -1726,43 +1813,46 @@ var SViewer = function () {
                 if (idProcess == config.wps.idGetStation) {
                     datas = {
                         [config.wps.datainputs.split("/")[0]]: [coord.split(',')[0]],
-                        [config.wps.datainputs.split("/")[1]]: [coord.split(',')[1]],
+                        [config.wps.datainputs.split("/")[1]]: [coord.split(',')[1].slice(1)],
                         [config.wps.datainputs.split("/")[2]]: [$("#dateStart").val()],
                         [config.wps.datainputs.split("/")[3]]: [$("#dateEnd").val()],
-                        [config.wps.datainputs.split("/")[4]]: [$("#nameProcess").val().replace(/ /g, "_")],
-                        [config.wps.datainputs.split("/")[6]]: [inBasin]
+                        [config.wps.datainputs.split("/")[4]]: [$("#nameProcess").val().replace(/ /g, "_").replace(/-/g, "_")],
+                        [config.wps.datainputs.split("/")[8]]: [$("#distance").val()],
+                        [config.wps.datainputs.split("/")[7]]: [$("#listStations").val()]
                     };
 
                     var rqtWPS = buildXmlRequest(config.wps.service, config.wps.version, config.wps.request, config.wps.idGetStation,
                         datas, config.wps.storeExecuteResponse, config.wps.lineage, config.wps.status);
-
-                } else if (idProcess == config.wps.idModel) {
+                    
+                } else if (idProcess == config.wps.idCalcModel) {
                     datas = {
                         [config.wps.datainputs.split("/")[0]]: [coord.split(',')[0]],
-                        [config.wps.datainputs.split("/")[1]]: [coord.split(',')[1]],
+                        [config.wps.datainputs.split("/")[1]]: [coord.split(',')[1].slice(1)],
                         [config.wps.datainputs.split("/")[2]]: [$("#dateStart").val()],
                         [config.wps.datainputs.split("/")[3]]: [$("#dateEnd").val()],
-                        [config.wps.datainputs.split("/")[4]]: [$("#nameProcess").val().replace(/ /g, "_")],
+                        [config.wps.datainputs.split("/")[4]]: [$("#nameProcess").val().replace(/ /g, "_").replace(/-/g, "_")],
                         [config.wps.datainputs.split("/")[5]]: [$("input[name='deltaT']:checked").val()],
                         [config.wps.datainputs.split("/")[6]]: [inBasin]
                     };
 
-                    var rqtWPS = buildXmlRequest(config.wps.service, config.wps.version, config.wps.request, config.wps.idModel,
+                    var rqtWPS = buildXmlRequest(config.wps.service, config.wps.version, config.wps.request, config.wps.idCalcModel,
                         datas, config.wps.storeExecuteResponse, config.wps.lineage, config.wps.status);
-                    
-                } else if (idProcess == config.wps.idGetTransfr) {
+
+                } else if (idProcess == config.wps.idCalcGhosh) {
                     datas = {
                         [config.wps.datainputs.split("/")[0]]: [coord.split(',')[0]],
-                        [config.wps.datainputs.split("/")[1]]: [coord.split(',')[1]],
+                        [config.wps.datainputs.split("/")[1]]: [coord.split(',')[1].slice(1)],
                         [config.wps.datainputs.split("/")[2]]: [$("#dateStart").val()],
                         [config.wps.datainputs.split("/")[3]]: [$("#dateEnd").val()],
-                        [config.wps.datainputs.split("/")[4]]: [$("#nameProcess").val().replace(/ /g, "_")],
-                        [config.wps.datainputs.split("/")[5]]: [$("input[name='deltaT']:checked").val()],
-                        [config.wps.datainputs.split("/")[7]]: [document.getElementById($("#nameProcess").val().replace(/ /g, "_")+"_inputStation").value]
+                        [config.wps.datainputs.split("/")[4]]: [$("#nameProcess").val().replace(/ /g, "_").replace(/-/g, "_")],
+                        [config.wps.datainputs.split("/")[6]]: [inBasin],
+                        [config.wps.datainputs.split("/")[7]]: [$("#listStations").val()]
+                        //[config.wps.datainputs.split("/")[7]]: [document.getElementById($("#nameProcess").val().replace(/ /g, "_").replace(/-/g, "_") + "_inputStation").value]
                     };
-                    
-                    var rqtWPS = buildXmlRequest(config.wps.service, config.wps.version, config.wps.request, config.wps.idGetTransfr,
+
+                    var rqtWPS = buildXmlRequest(config.wps.service, config.wps.version, config.wps.request, config.wps.idCalcGhosh,
                         datas, config.wps.storeExecuteResponse, config.wps.lineage, config.wps.status);
+
                 }
 
                 processExe(xhr, rqtWPS, idProcess);
@@ -2341,6 +2431,7 @@ var SViewer = function () {
         // map events
         map.on('singleclick', function (e) {
             queryMap(e.coordinate);
+            xyOnNetwork();
             $('#panelWPS').popup('open');
         });
 
