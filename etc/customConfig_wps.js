@@ -189,10 +189,11 @@ customConfig = {
      */
     wps: {
         url: "http://wps.geosas.fr",
-        url_wps: "http://wps.geosas.fr/simfen?",
+        url_wps: "http://wps.geosas.fr/simfen-dev?",
         service: "WPS",
         version: "1.0.0",
         request: "Execute",
+<<<<<<< .merge_file_3YsOXt
         idGetStation: "getStations",
         idGetTransfr: "getTransfr",
         idModel: "transfr",
@@ -202,6 +203,17 @@ customConfig = {
         lineage: true,
         status: true,
         describeWPS: 'http://wps.geosas.fr/simfen?service=WPS&version=1.0.0&request=describeProcess&identifier=transfr',
+=======
+        idGetStation: "getStationsGeobretagne",
+        idCalcModel: "calcModel",
+        idCalcGhosh: "calcGhosh",
+        idXyOnNetwork: "xyOnNetwork",
+	    datainputs: "X/Y/Start/End/Name/DeltaT/InBasin/ListStations/Distance",
+        storeExecuteResponse: true,
+        lineage: true,
+        status: true,
+        describeWPS: 'http://wps.geosas.fr/simfen-dev?service=WPS&version=1.0.0&request=describeProcess&identifier=transfr',
+>>>>>>> .merge_file_vI0zjp
         refreshTime: 5000,
         refreshTimeXY: 1000
     },

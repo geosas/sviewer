@@ -3,3 +3,4 @@
 *.swo
 node_modules
 npm-debug.log
+etc/customConfig_wps.js

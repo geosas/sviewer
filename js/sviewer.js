@@ -1543,7 +1543,8 @@ var SViewer = function () {
                     for (var j = 0; j < features.length; j++) {
                         // recupere sa coordonnees et son nom
                         coord = gmlStationsXML.getElementsByTagName("gml:coordinates")[j].textContent.split(",");
-                        nameStation = gmlStationsXML.getElementsByTagName("ogr:CDSTATIONH")[j].textContent;
+
+                        nameStation = gmlStationsXML.getElementsByTagName("ogr:code_hydro")[j].textContent;
 
                         if (outputName === 'Stations') {
                             arrStations.push(nameStation);
@@ -1708,12 +1709,12 @@ var SViewer = function () {
                     // arrete l'ecoute du status puisque le process est termine
                     clearInterval(updating);
                     if (status === 'wps:ProcessSucceeded') {
-                        if (idProcess == config.wps.idModel || idProcess == config.wps.idGetTransfr) {
+                        if (idProcess == config.wps.idCalcModel) {
                             // Affiche les stations employees
                             plotStation(xmlResult, downloadCell, nameProcess);
                             // cree un graphique d'apres le resultat et mets en place un lien de telechargement
                             plotDlDatas(xmlResult, nameProcess, downloadCell);
-                        } else if (idProcess == config.wps.idGetStation) {
+                        } else if (idProcess == config.wps.idGetStation || idProcess == config.wps.idCalcGhosh) {
                             // Affiche les stations employees
                             plotStation(xmlResult, downloadCell, nameProcess);
                         }
@@ -1813,20 +1814,21 @@ var SViewer = function () {
                 if (idProcess == config.wps.idGetStation) {
                     datas = {
                         [config.wps.datainputs.split("/")[0]]: [coord.split(',')[0]],
-                        [config.wps.datainputs.split("/")[1]]: [coord.split(',')[1]],
+                        [config.wps.datainputs.split("/")[1]]: [coord.split(',')[1].slice(1)],
                         [config.wps.datainputs.split("/")[2]]: [$("#dateStart").val()],
                         [config.wps.datainputs.split("/")[3]]: [$("#dateEnd").val()],
                         [config.wps.datainputs.split("/")[4]]: [$("#nameProcess").val().replace(/ /g, "_").replace(/-/g, "_")],
-                        [config.wps.datainputs.split("/")[6]]: [inBasin]
+                        [config.wps.datainputs.split("/")[8]]: [$("#distance").val()],
+                        [config.wps.datainputs.split("/")[7]]: [$("#listStations").val()]
                     };
 
                     var rqtWPS = buildXmlRequest(config.wps.service, config.wps.version, config.wps.request, config.wps.idGetStation,
                         datas, config.wps.storeExecuteResponse, config.wps.lineage, config.wps.status);
-
-                } else if (idProcess == config.wps.idModel) {
+                    
+                } else if (idProcess == config.wps.idCalcModel) {
                     datas = {
                         [config.wps.datainputs.split("/")[0]]: [coord.split(',')[0]],
-                        [config.wps.datainputs.split("/")[1]]: [coord.split(',')[1]],
+                        [config.wps.datainputs.split("/")[1]]: [coord.split(',')[1].slice(1)],
                         [config.wps.datainputs.split("/")[2]]: [$("#dateStart").val()],
                         [config.wps.datainputs.split("/")[3]]: [$("#dateEnd").val()],
                         [config.wps.datainputs.split("/")[4]]: [$("#nameProcess").val().replace(/ /g, "_").replace(/-/g, "_")],
@@ -1834,22 +1836,24 @@ var SViewer = function () {
                         [config.wps.datainputs.split("/")[6]]: [inBasin]
                     };
 
-                    var rqtWPS = buildXmlRequest(config.wps.service, config.wps.version, config.wps.request, config.wps.idModel,
+                    var rqtWPS = buildXmlRequest(config.wps.service, config.wps.version, config.wps.request, config.wps.idCalcModel,
                         datas, config.wps.storeExecuteResponse, config.wps.lineage, config.wps.status);
 
-                } else if (idProcess == config.wps.idGetTransfr) {
+                } else if (idProcess == config.wps.idCalcGhosh) {
                     datas = {
                         [config.wps.datainputs.split("/")[0]]: [coord.split(',')[0]],
-                        [config.wps.datainputs.split("/")[1]]: [coord.split(',')[1]],
+                        [config.wps.datainputs.split("/")[1]]: [coord.split(',')[1].slice(1)],
                         [config.wps.datainputs.split("/")[2]]: [$("#dateStart").val()],
                         [config.wps.datainputs.split("/")[3]]: [$("#dateEnd").val()],
                         [config.wps.datainputs.split("/")[4]]: [$("#nameProcess").val().replace(/ /g, "_").replace(/-/g, "_")],
-                        [config.wps.datainputs.split("/")[5]]: [$("input[name='deltaT']:checked").val()],
-                        [config.wps.datainputs.split("/")[7]]: [document.getElementById($("#nameProcess").val().replace(/ /g, "_").replace(/-/g, "_") + "_inputStation").value]
+                        [config.wps.datainputs.split("/")[6]]: [inBasin],
+                        [config.wps.datainputs.split("/")[7]]: [$("#listStations").val()]
+                        //[config.wps.datainputs.split("/")[7]]: [document.getElementById($("#nameProcess").val().replace(/ /g, "_").replace(/-/g, "_") + "_inputStation").value]
                     };
 
-                    var rqtWPS = buildXmlRequest(config.wps.service, config.wps.version, config.wps.request, config.wps.idGetTransfr,
+                    var rqtWPS = buildXmlRequest(config.wps.service, config.wps.version, config.wps.request, config.wps.idCalcGhosh,
                         datas, config.wps.storeExecuteResponse, config.wps.lineage, config.wps.status);
+
                 }
 
                 processExe(xhr, rqtWPS, idProcess);

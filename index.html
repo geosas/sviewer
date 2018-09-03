@@ -115,7 +115,7 @@
                 
                 <form id="wpsForm" method="POST" action="">
                 Start : <input type="date" id="dateStart" name="dateStart" min="2017-10-05" max="2017-12-10" value="2017-10-05">
-                End :<input type="date" id="dateEnd" name="dateEnd" min="2017-10-05" max="2017-12-10" value="2017-12-05">
+                End : <input type="date" id="dateEnd" name="dateEnd" min="2017-10-05" max="2017-12-10" value="2017-12-05">
                     
                 <fieldset>
                     <legend>Pas de temps des débits simulés : </legend>
@@ -132,12 +132,14 @@
                     <input type="checkbox" id="inBasin" name="inBasin">
                     <label for="inBasin">Oui</label>
                 </fieldset>
-                    
+                
+                Distance : <input type="text" id="distance" name="distance" max="50000" value="50000">
+                Liste Stations : <input type="text" id="listStations" name="listStations" value="None">
                 Name : <input type="text" id="nameProcess" name= "nameProcess" placeholder="Give name">
                 <fieldset data-role="controlgroup" data-type="horizontal">
-                <button type="submit" data-icon="check" class="i18n" name="action" value="getStations">Station</button>
-                <button type="submit" data-icon="check" class="i18n" name="action" value="getTransfr">StationToTransfr</button>
-                <button type="submit" data-icon="check" class="i18n" name="action" value="transfr">Transfr</button>
+                <button type="submit" data-icon="check" class="i18n" name="action" value="getStationsGeobretagne">GetStation</button>
+                <button type="submit" data-icon="check" class="i18n" name="action" value="calcGhosh">CalcGhosh</button>
+                <button type="submit" data-icon="check" class="i18n" name="action" value="calcModel">CalcModel</button>
                 </fieldset>
                 </form>
             </div>
